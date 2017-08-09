@@ -20,8 +20,8 @@
 using namespace cv;
 using namespace std;
 
-//#define STDIO_DEBUG
-//#define SOCKET_SEND_IMAGE
+#define STDIO_DEBUG
+#define SOCKET_SEND_IMAGE
 
 
 int main(int argc, char **argv)
@@ -60,6 +60,20 @@ int main(int argc, char **argv)
 	distCoeffs.at<double>(2, 0) = -2.656378643258185e-04;
 	distCoeffs.at<double>(3, 0) = 0.001513705053758;
 	distCoeffs.at<double>(4, 0) = 0;
+	
+//	Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
+//	cameraMatrix.at<double>(0, 0) = 6.581772704460833e02*imRawFactor;
+//	cameraMatrix.at<double>(0, 1) = 0.749911819487793*imRawFactor;
+//	cameraMatrix.at<double>(0, 2) = 6.452732528089651e02*imRawFactor;
+//	cameraMatrix.at<double>(1, 1) = 6.566540417566417e02*imRawFactor;
+//	cameraMatrix.at<double>(1, 2) = 4.371415328611994e02*imRawFactor;
+//	
+//	Mat distCoeffs = Mat::zeros(5, 1, CV_64F);
+//	distCoeffs.at<double>(0, 0) = -0.285784464085280;
+//	distCoeffs.at<double>(1, 0) = 0.064227650409763;
+//	distCoeffs.at<double>(2, 0) = -7.378200021153921e-04;
+//	distCoeffs.at<double>(3, 0) = -4.368607112562313e-04;
+//	distCoeffs.at<double>(4, 0) = 0;
 	
 	Mat map1, map2;
 	Size imRawSize(imRawW, imRawH);
@@ -154,7 +168,7 @@ int main(int argc, char **argv)
 		}
 		
 		remap(imRaw, imRaw, map1, map2, INTER_LINEAR);//INTER_NEAREST
-		imRaw = imRaw(plateRegion);
+//		imRaw = imRaw(plateRegion);
 			
 		
 		/// 小球定位算法开始
@@ -171,7 +185,7 @@ int main(int argc, char **argv)
 		//以小球半径的两倍为窗口长度
 		
 		//计算二值图形的矩特征
-		Moments mu=moments(imProcess,true);
+		Moments mu = moments(imProcess, true);
 		Point2f ballPoint(mu.m10 / mu.m00, mu.m01 / mu.m00);
 		pos[0] = ballPoint.x;
 		pos[1] = ballPoint.y;
@@ -221,7 +235,7 @@ int main(int argc, char **argv)
 		
 #ifdef SOCKET_SEND_IMAGE
 		//发送图像，用于测试
-		resize(imProcess, imSend, Size(0, 0), 1, 1, INTER_NEAREST);
+		resize(imRaw, imSend, Size(0, 0), 1, 1, INTER_NEAREST);
 //		threshold(imTrans, imSend, threshBinary, 255, CV_THRESH_BINARY);
 		socketMat.transmit(imSend, 80);
 #endif // SOCKET_SEND_IMAGE

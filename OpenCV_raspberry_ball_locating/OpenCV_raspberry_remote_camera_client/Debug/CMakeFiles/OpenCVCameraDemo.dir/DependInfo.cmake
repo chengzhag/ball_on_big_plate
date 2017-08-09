@@ -4,9 +4,9 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.cpp" "C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/Debug/CMakeFiles/OpenCVCameraDemo.dir/SocketMatTransmissionClient.cpp.o"
-  "C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/raspberry_client.cpp" "C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/Debug/CMakeFiles/OpenCVCameraDemo.dir/raspberry_client.cpp.o"
-  "C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.cpp" "C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/Debug/CMakeFiles/OpenCVCameraDemo.dir/util/my_opencv.cpp.o"
+  "C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.cpp" "C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/Debug/CMakeFiles/OpenCVCameraDemo.dir/SocketMatTransmissionClient.cpp.o"
+  "C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/raspberry_client.cpp" "C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/Debug/CMakeFiles/OpenCVCameraDemo.dir/raspberry_client.cpp.o"
+  "C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.cpp" "C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/Debug/CMakeFiles/OpenCVCameraDemo.dir/util/my_opencv.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

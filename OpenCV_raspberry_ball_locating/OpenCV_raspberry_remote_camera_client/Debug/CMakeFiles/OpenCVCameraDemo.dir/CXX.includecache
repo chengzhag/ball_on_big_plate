@@ -26,17 +26,17 @@ wiringSerial.h
 iostream
 -
 
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.cpp
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.cpp
 SocketMatTransmissionClient.h
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
 iostream
 -
 my_math.h
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/my_math.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/my_math.h
 
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
 opencv2/opencv.hpp
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/opencv2/opencv.hpp
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/opencv2/opencv.hpp
 stdio.h
 -
 stdlib.h
@@ -58,7 +58,7 @@ arpa/inet.h
 vector
 -
 
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/raspberry_client.cpp
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/raspberry_client.cpp
 ctime
 -
 iostream
@@ -68,33 +68,33 @@ stdio.h
 raspicam_cv.h
 -
 opencv2/highgui/highgui.hpp
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/opencv2/highgui/highgui.hpp
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/opencv2/highgui/highgui.hpp
 opencv2/imgproc/imgproc.hpp
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/opencv2/imgproc/imgproc.hpp
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/opencv2/imgproc/imgproc.hpp
 vector
 -
 SocketMatTransmissionClient.h
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
 my_opencv.h
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/my_opencv.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/my_opencv.h
 my_math.h
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/my_math.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/my_math.h
 algorithm
 -
 uart_num.h
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/uart_num.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/uart_num.h
 wiringPi.h
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/wiringPi.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/wiringPi.h
 wiringSerial.h
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/wiringSerial.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/wiringSerial.h
 
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.cpp
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.cpp
 my_opencv.h
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.h
 
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.h
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.h
 opencv2/opencv.hpp
-C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/opencv2/opencv.hpp
+C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/opencv2/opencv.hpp
 vector
 -
 

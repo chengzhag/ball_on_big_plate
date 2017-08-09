@@ -3,8 +3,8 @@
 
 CMakeFiles/OpenCVCameraDemo.dir/SocketMatTransmissionClient.cpp.o
  ../util/my_math.h
- C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.cpp
- C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
+ C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.cpp
+ C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
  D:/OpenCV_3_2_0_source/build/Debug/opencv2/opencv_modules.hpp
  D:/OpenCV_3_2_0_source/include/opencv/cxcore.h
  D:/OpenCV_3_2_0_source/include/opencv2/opencv.hpp
@@ -129,8 +129,8 @@ CMakeFiles/OpenCVCameraDemo.dir/raspberry_client.cpp.o
  ../util/my_math.h
  ../util/my_opencv.h
  ../util/uart_num.h
- C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
- C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/raspberry_client.cpp
+ C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/SocketMatTransmissionClient.h
+ C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/raspberry_client.cpp
  D:/OpenCV_3_2_0_source/build/Debug/opencv2/opencv_modules.hpp
  D:/OpenCV_3_2_0_source/include/opencv/cxcore.h
  D:/OpenCV_3_2_0_source/include/opencv2/opencv.hpp
@@ -254,8 +254,8 @@ CMakeFiles/OpenCVCameraDemo.dir/raspberry_client.cpp.o
  D:/OpenCV_3_2_0_source/modules/videostab/include/opencv2/videostab/stabilizer.hpp
  D:/OpenCV_3_2_0_source/modules/videostab/include/opencv2/videostab/wobble_suppression.hpp
 CMakeFiles/OpenCVCameraDemo.dir/util/my_opencv.cpp.o
- C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.cpp
- C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.h
+ C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.cpp
+ C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/util/my_opencv.h
  D:/OpenCV_3_2_0_source/build/Debug/opencv2/opencv_modules.hpp
  D:/OpenCV_3_2_0_source/include/opencv/cxcore.h
  D:/OpenCV_3_2_0_source/include/opencv2/opencv.hpp

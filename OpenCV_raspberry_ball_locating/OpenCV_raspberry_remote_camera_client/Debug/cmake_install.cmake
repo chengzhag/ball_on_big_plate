@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client
+# Install script for directory: C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,5 +40,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "C:/Users/Sky/Desktop/ball_on_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/Debug/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/Debug/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
