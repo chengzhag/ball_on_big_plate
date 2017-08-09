@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 		string imgname;
 		if (key == 27)break;
 
-		if (all % 30 == 0)
+		if (all % 15 == 0)
 		{
 			stringstream stream;
 			stream << f++;

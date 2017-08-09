@@ -48,17 +48,17 @@ int main(int argc, char **argv)
 	
 	//»û±ä½ÃÕý
 	Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
-	cameraMatrix.at<double>(0, 0) = 6.581772704460833e02*imRawFactor;
-	cameraMatrix.at<double>(0, 1) = 0.749911819487793*imRawFactor;
-	cameraMatrix.at<double>(0, 2) = 6.452732528089651e02*imRawFactor;
-	cameraMatrix.at<double>(1, 1) = 6.566540417566417e02*imRawFactor;
-	cameraMatrix.at<double>(1, 2) = 4.371415328611994e02*imRawFactor;
+	cameraMatrix.at<double>(0, 0) = 7.428373545192941e02*imRawFactor;
+	cameraMatrix.at<double>(0, 1) = 0.950790070584049*imRawFactor;
+	cameraMatrix.at<double>(0, 2) = 6.631483964605850e02*imRawFactor;
+	cameraMatrix.at<double>(1, 1) = 7.427433947316842e02*imRawFactor;
+	cameraMatrix.at<double>(1, 2) = 4.342201658042163e02*imRawFactor;
 	
 	Mat distCoeffs = Mat::zeros(5, 1, CV_64F);
-	distCoeffs.at<double>(0, 0) = -0.285784464085280;
-	distCoeffs.at<double>(1, 0) = 0.064227650409763;
-	distCoeffs.at<double>(2, 0) = -7.378200021153921e-04;
-	distCoeffs.at<double>(3, 0) = -4.368607112562313e-04;
+	distCoeffs.at<double>(0, 0) = -0.290711633529124;
+	distCoeffs.at<double>(1, 0) = 0.056979441111773;
+	distCoeffs.at<double>(2, 0) = -2.656378643258185e-04;
+	distCoeffs.at<double>(3, 0) = 0.001513705053758;
 	distCoeffs.at<double>(4, 0) = 0;
 	
 	Mat map1, map2;
