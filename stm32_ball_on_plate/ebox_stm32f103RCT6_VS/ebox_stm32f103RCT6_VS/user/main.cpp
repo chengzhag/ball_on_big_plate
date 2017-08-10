@@ -513,7 +513,7 @@ void setup()
 	//float bias[3];
 	//mpu.getAccelBias(bias, bias + 1, bias + 2);
 	uartNum.attach(posReceiveEvent);
-	ws2812.setAllDataHSV(60, 1, 0.7);
+	ws2812.setAllDataHSV(60, 0, 0.7);
 	//²Ù×÷ÏµÍ³
 	set_systick_user_event_per_sec(configTICK_RATE_HZ);
 	attach_systick_user_event(xPortSysTickHandler);

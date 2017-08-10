@@ -79,6 +79,8 @@ my_opencv.h
 C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/my_opencv.h
 my_math.h
 C:/Users/Sky/Desktop/ball_on_big_plate/OpenCV_raspberry_ball_locating/OpenCV_raspberry_remote_camera_client/my_math.h
+math.h
+-
 algorithm
 -
 uart_num.h
