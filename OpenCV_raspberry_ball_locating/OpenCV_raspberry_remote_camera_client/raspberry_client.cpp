@@ -21,12 +21,17 @@
 using namespace cv;
 using namespace std;
 
-#define STDIO_DEBUG
-#define SOCKET_SEND_IMAGE
+//#define STDIO_DEBUG
+//#define SOCKET_SEND_IMAGE
+//#define FINAL_RELEASE
 
 
 int main(int argc, char **argv)
 {
+#ifndef FINAL_RELEASE
+	system("sudo killall ball");	  
+#endif // !FINAL_RELEASE
+
 	piHiPri(99);//最高优先级
 	///声明变量
 #ifdef SOCKET_SEND_IMAGE
@@ -246,22 +251,24 @@ int main(int argc, char **argv)
 		
 		//判断单片机发来的关机指令或按键发来的关机指令
 		int fd = uart.getFd();
-		char c;
 		if (int num = serialDataAvail(fd) > 0)
 		{
-			for (int i = 0; i < num; i++)
+			char c;
+			c = serialGetchar(fd);
+			for (int i = 1; i < num; i++)
 			{
-				c = serialGetchar(fd);
+				serialGetchar(fd);
 			}
+			if (c == 's')
+			{
+				system("sudo shutdown -h now");
+			}
+//			else if (c == 'k')
+//			{
+//				system("sudo killall OpenCVCameraDemo");
+//			}
 		}
-		if (c == 's')
-		{
-			system("sudo shutdown -h now");
-		}
-		else if (c == 'k')
-		{
-			system("sudo killall OpenCVCameraDemo");
-		}
+		
 		
 		
 	}
