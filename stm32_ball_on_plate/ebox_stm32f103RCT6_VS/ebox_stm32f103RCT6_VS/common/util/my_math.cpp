@@ -28,7 +28,12 @@ void FpsCounter::begin()
 
 float FpsCounter::getFps()
 {
-	float fps = 1000.0f / toc();
+	fps = 1000.0f / toc();
 	tic();
+	return fps;
+}
+
+float FpsCounter::getOldFps()
+{
 	return fps;
 }

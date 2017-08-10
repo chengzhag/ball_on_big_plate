@@ -1,4 +1,5 @@
 #include "ebox.h"
+#include "ball_on_plate.h"
 
 //µ÷ÊÔ
 #include "led.h"
@@ -26,7 +27,6 @@
 #include "queue.h"
 //ÕÕÃ÷
 #include "ws2812.h"
-
 
 
 //#define SYSTEM_IDENTIFICATION

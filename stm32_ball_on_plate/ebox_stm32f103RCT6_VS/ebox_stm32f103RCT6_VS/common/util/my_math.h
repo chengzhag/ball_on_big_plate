@@ -74,6 +74,7 @@ public:
 //帧率计数器
 class FpsCounter:private TicToc
 {
+	float fps;
 public:
 	FpsCounter();
 
@@ -82,6 +83,9 @@ public:
 
 	//计算帧率
 	float getFps();
+
+	//获取上次帧率
+	float getOldFps();
 };
 
 
