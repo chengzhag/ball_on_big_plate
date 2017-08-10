@@ -31,7 +31,7 @@
 
 //#define SYSTEM_IDENTIFICATION
 #define BALL_BALANCE
-#define ENABLE_REPETITIVE_CONTROLLER
+//#define ENABLE_REPETITIVE_CONTROLLER
 
 #ifdef SYSTEM_IDENTIFICATION
 #include "signal_table.h"
@@ -55,9 +55,8 @@ float posY = -1;
 const float ratePID = 32;
 const float intervalPID = 1 / ratePID;
 //前馈系统
-const float feedForwardSysK = 1;
 const float gzDenominator 
-= feedForwardSysK*26.4106* intervalPID *intervalPID;
+= 0.6125* intervalPID *intervalPID / (4 / 3 * M_PI / 200);//除以一个舵机百分比到舵机弧度的单位系数
 float feedforwardSysH[] = {
 	1 / gzDenominator,
 	-2/ gzDenominator,
@@ -69,13 +68,13 @@ SysWithOnlyZero feedforwardSysX(feedforwardSysH, 3)
 //pid参数
 float targetX = maxX / 2, targetY = maxY / 2,
 targetXraw = targetX, targetYraw = targetY;
-const float factorPID = 3.5;
+const float factorPID = 3.7;
 //PIDIntSepIncDiff
 //pidX(0.3f*factorPID, 0.2f*factorPID, 0.16f*factorPID, 1.f / ratePID, 15),
 //pidY(0.3f*factorPID, 0.2f*factorPID, 0.16f*factorPID, 1.f / ratePID, 15);
 PIDFeforGshifIntIncDiff
-pidX(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 7),
-pidY(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 7);
+pidX(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 5),//0.25 0.2 0.14
+pidY(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 5);
 //PIDFeforGshifIntIncDiffDezone
 //pidX(0.3f*factorPID, 0.2f*factorPID, 0.16f*factorPID, 1.f / ratePID, 8, 2),
 //pidY(0.3f*factorPID, 0.2f*factorPID, 0.16f*factorPID, 1.f / ratePID, 8, 2);
@@ -96,22 +95,22 @@ pidY(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 7);
 //pidX(0.25f*factorPID, 0.2f*factorPID, 0.16f*factorPID, 1.f / ratePID),
 //pidY(0.27f*factorPID, 0.18f*factorPID, 0.19f*factorPID, 1.f / ratePID);
 RcFilter filterX(ratePID, 15), filterY(ratePID, 15)
-, filterOutX(ratePID, 10), filterOutY(ratePID, 10)
-, filterTargetX(ratePID, 1), filterTargetY(ratePID, 1);
+, filterOutX(ratePID, 12), filterOutY(ratePID, 12)
+, filterTargetX(ratePID, 0.5), filterTargetY(ratePID, 0.5);
 float outX, outY;
 //重复控制补偿系统
-const float rateCircle = 0.5;
+const float rateCircle = 0.2;
 #ifdef ENABLE_REPETITIVE_CONTROLLER
 const int lengthRepetitiveController = ratePID / rateCircle;
-RepetitiveController repetitiveControllerX(lengthRepetitiveController, 12, 0.25, ratePID, 3)
-, repetitiveControllerY(lengthRepetitiveController, 12, 0.25, ratePID, 3);
+RepetitiveController repetitiveControllerX(lengthRepetitiveController, 12, 0.3, ratePID, 3)
+, repetitiveControllerY(lengthRepetitiveController, 12, 0.3, ratePID, 3);
 float outRepetitiveControllerX = 0, outRepetitiveControllerY = 0;
 bool isBallCircle = false, isBallCircleOld = false;
 #endif // ENABLE_REPETITIVE_CONTROLLER
 
 //动力
-Servo servoX(&PB9, 200, 0.65, 2.15);
-Servo servoY(&PB8, 200, 0.75, 2.25);
+Servo servoX(&PB9, 200, 0.75, 2.05);
+Servo servoY(&PB8, 200, 0.85, 2.15);
 
 //交互
 const float rateUI = 10;
@@ -310,8 +309,8 @@ void posReceiveEvent(UartNum<float, 2>* uartNum)
 		posX,posY
 		,outX,outY
 		//,fpsPIDtemp,fpsUItemp
-		//,pidX.getFeedforward(),pidY.getFeedforward()
-		,outRepetitiveControllerX,outRepetitiveControllerY
+		,pidX.getFeedforward(),pidY.getFeedforward()
+		//,outRepetitiveControllerX,outRepetitiveControllerY
 		//,(float)pidX.getCurrentRule(),(float)pidY.getCurrentRule()
 		//, kpX, kiX, kdX, kpY, kiY, kdY
 		,targetX,targetY 

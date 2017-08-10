@@ -22,7 +22,7 @@ using namespace cv;
 using namespace std;
 
 #define STDIO_DEBUG
-//#define SOCKET_SEND_IMAGE
+#define SOCKET_SEND_IMAGE
 
 
 int main(int argc, char **argv)
@@ -85,9 +85,9 @@ int main(int argc, char **argv)
 	//平板小球尺寸信息
 	const float maxX = 600, maxY = 600;
 	const float camHeight = 430;
-	const float ballArea = 30;
-	const float ballAreaLow = ballArea * 0.5;
-	const float ballAreaHigh = ballArea * 1.5;
+	const float ballArea = 26;
+	const float ballAreaLow = ballArea * 0.2;
+	const float ballAreaHigh = ballArea * 2;
 	
 	
 #ifdef SOCKET_SEND_IMAGE
@@ -115,6 +115,10 @@ int main(int argc, char **argv)
 	uart.begin();
 	
 	//初始化阈值，固定二值化阈值，减轻后面计算负担
+	const int structElementSizePre = 20;
+	Mat elementPre = getStructuringElement(MORPH_ELLIPSE,  
+		Size(2*structElementSize + 1, 2*structElementSize + 1),  
+		Point(structElementSize, structElementSize));
 	double threshBinary = 0;
 	for (int i = 0; i < 60; i++)
 	{
@@ -127,7 +131,7 @@ int main(int argc, char **argv)
 		}
 		remap(imRaw, imRaw, map1, map2, INTER_LINEAR);//INTER_NEAREST
 		imRaw = imRaw(plateRegion);
-		morphologyEx(imRaw, imRaw, CV_MOP_DILATE, element);
+		morphologyEx(imRaw, imRaw, CV_MOP_DILATE, elementPre);
 		
 		double minBrightness;
 		minMaxLoc(imRaw, &minBrightness, NULL, NULL, NULL);
@@ -140,7 +144,7 @@ int main(int argc, char **argv)
 #endif // SOCKET_SEND_IMAGE
 	}
 	threshBinary /= 60;
-	threshBinary -= 5;
+	threshBinary -= 10;
 
 	double timeStart = 0, timeEnd = 0;
 
