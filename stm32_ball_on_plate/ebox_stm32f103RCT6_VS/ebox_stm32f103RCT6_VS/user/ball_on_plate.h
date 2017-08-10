@@ -13,6 +13,7 @@
 //包含基本数据获取接口：当前坐标、PID相关变量、输出值、刷新速率
 //包含串口中断（PID处理中断）回调函数绑定接口
 //包含基本状态获取接口：小球是否在板上，树莓派是否在发送信息
+//包含树莓派基本操作接口：关机、停止进程
 //基本参数用静态常量
 class BallOnPlateBase
 {
@@ -144,9 +145,15 @@ public:
 	}
 
 	//获取位置的最大值（可视区域正方形的长宽）
-	float getMaxPos()
+	float getPosMax()
 	{
 		return maxPos;
+	}
+
+	//获取PID刷新间隔
+	float getIntervalPID()
+	{
+		return intervalPID;
 	}
 
 	//设置目标值
@@ -155,11 +162,48 @@ public:
 		targetXraw = x;
 		targetYraw = y;
 	}
-	//获取目标坐标
-	void getTarget(float *x, float *y)
+	//获取滤波后目标值
+	void getTargetFiltered(float *x, float *y)
 	{
-		*x = pidX.getTarget();
-		*y = pidY.getTarget();
+		*x = targetXFiltered;
+		*y = targetYFiltered;
+	}
+	//获取原始目标值
+	void getTargetRaw(float *x, float *y)
+	{
+		*x = targetXraw;
+		*y = targetYraw;
+	}
+
+	//设置目标X
+	void setTargetX(float x)
+	{
+		targetXraw = x;
+	}
+	//设置目标Y
+	void setTargetY(float y)
+	{
+		targetYraw = y;
+	}
+	//获取原始目标X
+	float getTargetXraw()
+	{
+		return targetXraw;
+	}
+	//获取原始目标Y
+	float getTargetYraw()
+	{
+		return targetYraw;
+	}
+	//获取滤波后目标X
+	float getTargetXFiltered()
+	{
+		return targetXFiltered;
+	}
+	//获取滤波后目标Y
+	float getTargetYFiltered()
+	{
+		return targetYFiltered;
 	}
 
 	//获取当前坐标
@@ -168,12 +212,32 @@ public:
 		*x = posX;
 		*y = posY;
 	}
+	//获取当前X坐标
+	float getPosX()
+	{
+		return posX;
+	}
+	//获取当前Y坐标
+	float getPosY()
+	{
+		return posY;
+	}
 
 	//获取舵机输出
-	void getOutput(float* x, float* y)
+	void getOut(float* x, float* y)
 	{
 		*x = outX;
 		*y = outY;
+	}
+	//获取当前X坐标
+	float getOutX()
+	{
+		return outX;
+	}
+	//获取当前Y坐标
+	float getOutY()
+	{
+		return outY;
 	}
 
 	//获取前馈控制量
@@ -181,6 +245,16 @@ public:
 	{
 		*x = pidX.getFeedforward();
 		*y = pidY.getFeedforward();
+	}
+	//获取X前馈控制量
+	float getFeedforwardX()
+	{
+		return pidX.getFeedforward();
+	}
+	//获取Y前馈控制量
+	float getFeedforwardY()
+	{
+		return pidY.getFeedforward();
 	}
 
 	//小球是否在板上
@@ -203,14 +277,14 @@ public:
 	}
 
 	//绑定pid中断中回调的函数
-	void attach(void(*afterPIDEvent)(void))
+	void attachAfterPIDEvent(void(*afterPIDEvent)(void))
 	{
 		this->afterPIDEvent.attach(afterPIDEvent);
 	}
 
 	//绑定pid中断中回调的函数
 	template<typename T>
-	void attach(T *pObj, void (T::*afterPIDEvent)(void))
+	void attachAfterPIDEvent(T *pObj, void (T::*afterPIDEvent)(void))
 	{
 		this->afterPIDEvent.attach(pObj, afterPIDEvent);
 	}
@@ -221,6 +295,11 @@ public:
 		return fpsPID.getOldFps();
 	}
 
+	//关闭树莓派
+	void shutdownRasp()
+	{
+		uartNum.printf("s");
+	}
 
 };
 
@@ -230,7 +309,9 @@ const float BallOnPlateBase::maxPos = 600;
 const float BallOnPlateBase::ratePID = 32;
 const float BallOnPlateBase::intervalPID = 1 / ratePID;
 //前馈系统
-const float BallOnPlateBase::gzDenominator = 0.6125* intervalPID *intervalPID / (4 / 3 * M_PI / 200);//除以一个舵机百分比到舵机弧度的单位系数
-const float BallOnPlateBase::feedforwardSysH[3] = { 1 / gzDenominator,-2 / gzDenominator,1 / gzDenominator };
+const float BallOnPlateBase::gzDenominator = 
+0.6125* intervalPID *intervalPID / (4 / 3 * M_PI / 200);//除以一个舵机百分比到舵机弧度的单位系数
+const float BallOnPlateBase::feedforwardSysH[3] = 
+{ 1 / gzDenominator,-2 / gzDenominator,1 / gzDenominator };
 //pid参数
 const float BallOnPlateBase::factorPID = 3.7;

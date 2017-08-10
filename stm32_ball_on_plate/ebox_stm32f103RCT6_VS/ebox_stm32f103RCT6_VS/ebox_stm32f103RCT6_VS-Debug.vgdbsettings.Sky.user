@@ -15,12 +15,25 @@
     <FavoriteEmbeddedRegisters />
     <LiveVariables>
       <LiveVariable>
-        <Expression>TIMx-&gt;CNT</Expression>
-        <Type>HexInt16</Type>
+        <Expression>outX</Expression>
+        <Type>Float32</Type>
         <Enabled>true</Enabled>
         <Breakpoint>
-          <ComparisonMode>Equals</ComparisonMode>
-          <Enabled>false</Enabled>
+          <Value>-99</Value>
+          <ComparisonMode>LessOrEquals</ComparisonMode>
+          <Enabled>true</Enabled>
+        </Breakpoint>
+        <Plot>true</Plot>
+        <IsCollapsed>false</IsCollapsed>
+      </LiveVariable>
+      <LiveVariable>
+        <Expression>outY</Expression>
+        <Type>Float32</Type>
+        <Enabled>true</Enabled>
+        <Breakpoint>
+          <Value>-99</Value>
+          <ComparisonMode>LessOrEquals</ComparisonMode>
+          <Enabled>true</Enabled>
         </Breakpoint>
         <Plot>true</Plot>
         <IsCollapsed>false</IsCollapsed>
