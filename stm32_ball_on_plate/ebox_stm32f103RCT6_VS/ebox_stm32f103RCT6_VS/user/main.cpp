@@ -42,12 +42,12 @@ using namespace std;
 //调试
 UartVscan uartVscan(&uart1);
 FpsCounter fpsPID, fpsUI, fpsMPU;
-float fpsPIDtemp, fpsUItemp, fpsMPUtemp;
+float fpsPIDtemp, fpsUItemp;
 
 //定位
 UartNum<float, 2> uartNum(&uart2);
-const float maxX = 200;
-const float maxY = 200;
+const float maxX = 600;
+const float maxY = 600;
 float posX = -1;
 float posY = -1;
 
@@ -69,13 +69,13 @@ SysWithOnlyZero feedforwardSysX(feedforwardSysH, 3)
 //pid参数
 float targetX = maxX / 2, targetY = maxY / 2,
 targetXraw = targetX, targetYraw = targetY;
-const float factorPID = 1.24;
+const float factorPID = 3.5;
 //PIDIntSepIncDiff
 //pidX(0.3f*factorPID, 0.2f*factorPID, 0.16f*factorPID, 1.f / ratePID, 15),
 //pidY(0.3f*factorPID, 0.2f*factorPID, 0.16f*factorPID, 1.f / ratePID, 15);
 PIDFeforGshifIntIncDiff
-pidX(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 30),
-pidY(0.27f*factorPID, 0.18f*factorPID, 0.17f*factorPID, 1.f / ratePID, 30);
+pidX(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 7),
+pidY(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 7);
 //PIDFeforGshifIntIncDiffDezone
 //pidX(0.3f*factorPID, 0.2f*factorPID, 0.16f*factorPID, 1.f / ratePID, 8, 2),
 //pidY(0.3f*factorPID, 0.2f*factorPID, 0.16f*factorPID, 1.f / ratePID, 8, 2);
@@ -110,17 +110,8 @@ bool isBallCircle = false, isBallCircleOld = false;
 #endif // ENABLE_REPETITIVE_CONTROLLER
 
 //动力
-Servo servoX(&PB9, 200, 0.7, 2.3);
-Servo servoY(&PB8, 200, 0.79, 2.39);
-
-//底座
-const float rateMPU = 100;
-const float intervalMPU = 1 / rateMPU;
-const uint32_t mpuRefreshDelay = ((1000 * intervalMPU + 0.5) / portTICK_RATE_MS);
-const float factorServo = 6.5;
-float angle[3];
-SoftI2c si2c3(&PB3, &PB11);
-MPU9250AHRS mpu(&si2c3, MPU6500_Model_6555);
+Servo servoX(&PB9, 200, 0.65, 2.15);
+Servo servoY(&PB8, 200, 0.75, 2.25);
 
 //交互
 const float rateUI = 10;
@@ -294,8 +285,8 @@ void posReceiveEvent(UartNum<float, 2>* uartNum)
 #endif // ENABLE_REPETITIVE_CONTROLLER
 
 
-			//outX = filterOutX.getFilterOut(outX);
-			//outY = filterOutY.getFilterOut(outY);
+			outX = filterOutX.getFilterOut(outX);
+			outY = filterOutY.getFilterOut(outY);
 
 
 			//servoX.setPct(outX);
@@ -307,6 +298,9 @@ void posReceiveEvent(UartNum<float, 2>* uartNum)
 			isBallBack = false;
 		}
 	}
+	servoX.setPct(outX);
+	servoY.setPct(outY);
+
 	fpsPIDtemp = fpsPID.getFps();
 	//float kpX, kiX, kdX;
 	//pidX.getPID(&kpX, &kiX, &kdX);
@@ -325,23 +319,6 @@ void posReceiveEvent(UartNum<float, 2>* uartNum)
 	uartVscan.sendOscilloscope(vscan, 8);
 }
 
-//底座平衡
-void mpuRefresh(void *pvParameters)
-{
-	portTickType xLastWakeTime;
-	xLastWakeTime = xTaskGetTickCount();
-	while (1)
-	{
-		//对mpu角度进行反馈
-		mpu.getAngle(angle, angle + 1, angle + 2);
-		servoX.setPct(outX - angle[1] * factorServo);
-		servoY.setPct(outY - angle[0] * factorServo);
-		fpsMPUtemp = fpsMPU.getFps();
-		vTaskDelayUntil(&xLastWakeTime, mpuRefreshDelay);
-	}
-
-}
-
 //UI交互
 void uiRefresh(void *pvParameters)
 {
@@ -351,7 +328,7 @@ void uiRefresh(void *pvParameters)
 	while (1)
 	{
 		//判断是否树莓派已关机
-		if (isShutdown = true)
+		if (isShutdown == true)
 		{
 			fpsPIDtemp = 0;
 		}
@@ -370,10 +347,9 @@ void uiRefresh(void *pvParameters)
 		default:
 			break;
 		}
-		oled.printf(0, 2, 2, "%.1f %.1f   ", (float)posX, (float)posY);
-		oled.printf(0, 4, 2, "%.1f %.1f   ", angle[0], angle[1]);
+		oled.printf(0, 2, 2, "%-8.1f%-8.1f", (float)posX, (float)posY);
 		fpsUItemp = fpsUI.getFps();
-		oled.printf(0, 6, 2, "%.0f %.0f %.0f ", fpsPIDtemp, fpsUItemp, fpsMPUtemp);
+		oled.printf(0, 4, 2, "%-8.0f%-8.0f", fpsPIDtemp, fpsUItemp);
 		
 		//把关机置1，等待串口中断来置0
 		isShutdown = true;
@@ -451,17 +427,17 @@ void setup()
 
 	//PID
 	pidX.setTarget(maxX / 2);
-	pidX.setOutputLim(-50, 50);
+	pidX.setOutputLim(-100, 100);
 	//pidX.setISepPoint(15);
-	pidX.setGearshiftPoint(10, 50);
+	pidX.setGearshiftPoint(30, 100);
 	pidX.attachFeedForwardH(&feedforwardSysX, &SysWithOnlyZero::getY);
 	//pidX.setParams(80, 30, 1.5, 0.5, 10);
 	//pidX.setFuzzyTable(&fuzzyPIDDeltaKpTable, &fuzzyPIDDeltaKiTable, &fuzzyPIDDeltaKdTable);
 
 	pidY.setTarget(maxY / 2);
-	pidY.setOutputLim(-50, 50);
+	pidY.setOutputLim(-100, 100);
 	//pidY.setISepPoint(15);
-	pidY.setGearshiftPoint(10, 50);
+	pidY.setGearshiftPoint(30, 100);
 	pidY.attachFeedForwardH(&feedforwardSysY, &SysWithOnlyZero::getY);
 	//pidY.setParams(80, 30, 1.5, 0.5, 10);
 	//pidY.setFuzzyTable(&fuzzyPIDDeltaKpTable, &fuzzyPIDDeltaKiTable, &fuzzyPIDDeltaKdTable);
@@ -476,14 +452,6 @@ void setup()
 	//定位
 	uartNum.begin(115200);
 
-	//底座
-	mpu.setGyroBias(-0.0151124271, -0.00376615906, 0.0124653624);
-	mpu.setAccelBias(-0.0590917952, -0.0075366213, 0.120300293);
-	mpu.setMagBiasSens(
-		-18.786200, 17.835992, 14.496549,
-		0.986133, 1.038038, 0.975829);
-	mpu.setOrien(1, 2, 3);
-
 
 	//交互
 	keyD.begin();
@@ -497,8 +465,6 @@ void setup()
 	ws2812.begin();
 
 
-
-
 #ifdef SYSTEM_IDENTIFICATION
 	mpu.begin(400000, ratePID, MPU6500_Gyro_Full_Scale_500dps, MPU6500_Accel_Full_Scale_4g
 		,MPU6500_DLPF_Bandwidth_250Hz,MPU6500_A_DLPF_Bandwidth_420Hz);
@@ -509,15 +475,11 @@ void setup()
 #endif // SYSTEM_IDENTIFICATION
 
 #ifdef BALL_BALANCE
-	mpu.begin(400000, rateMPU, MPU6500_Gyro_Full_Scale_500dps, MPU6500_Accel_Full_Scale_4g);
-	//float bias[3];
-	//mpu.getAccelBias(bias, bias + 1, bias + 2);
 	uartNum.attach(posReceiveEvent);
 	ws2812.setAllDataHSV(60, 0, 0.7);
 	//操作系统
 	set_systick_user_event_per_sec(configTICK_RATE_HZ);
 	attach_systick_user_event(xPortSysTickHandler);
-	xTaskCreate(mpuRefresh, "mpuRefresh", 512, NULL, 0, NULL);
 	xTaskCreate(uiRefresh, "uiRefresh", 512, NULL, 0, NULL);
 #endif // BALL_BALANCE
 	vTaskStartScheduler();
