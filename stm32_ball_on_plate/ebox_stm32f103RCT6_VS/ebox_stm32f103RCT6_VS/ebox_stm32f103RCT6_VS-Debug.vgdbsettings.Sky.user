@@ -21,9 +21,9 @@
         <Breakpoint>
           <Value>-99</Value>
           <ComparisonMode>LessOrEquals</ComparisonMode>
-          <Enabled>true</Enabled>
+          <Enabled>false</Enabled>
         </Breakpoint>
-        <Plot>true</Plot>
+        <Plot>false</Plot>
         <IsCollapsed>false</IsCollapsed>
       </LiveVariable>
       <LiveVariable>
@@ -33,9 +33,9 @@
         <Breakpoint>
           <Value>-99</Value>
           <ComparisonMode>LessOrEquals</ComparisonMode>
-          <Enabled>true</Enabled>
+          <Enabled>false</Enabled>
         </Breakpoint>
-        <Plot>true</Plot>
+        <Plot>false</Plot>
         <IsCollapsed>false</IsCollapsed>
       </LiveVariable>
     </LiveVariables>

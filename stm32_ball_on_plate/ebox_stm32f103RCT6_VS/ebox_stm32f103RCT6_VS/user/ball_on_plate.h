@@ -7,6 +7,78 @@
 #include "servo.h"
 #include "ws2812.h"
 
+////为木板平板小球设计的死区PID
+////在死区deadzone中，如果速度小于vLim，禁用I控制
+//
+////在目标速度小于vLim且误差小于errLim时，禁用I控制
+////否则在误差绝对值减小时，禁用I控制
+////否则在误差绝对值增大时，启用I控制
+//class PIDBallOnPlate:public PIDFeedforward, public PIDIncompleteDiff
+//{
+//public:
+//	PIDBallOnPlate
+//};
+
+////为木板平板小球设计的死区PID
+////在死区deadzone中，如果速度小于vLim，禁用I控制
+class PIDBallOnPlate :public PIDFeforGshifIntIncDiff, public PIDDeadzone
+{
+	float vLim;
+public:
+	PIDBallOnPlate(float kp = 0, float ki = 0, float kd = 0,
+		float interval = 0.01, float stopFrq = 50, float deadzone = 0, float vLim = 0) :
+		PIDPosition(kp, ki, kd, interval),
+		PIDFeforGshifIntIncDiff(kp, ki, kd, interval, stopFrq),
+		PIDDeadzone(kp, ki, kd, interval, deadzone),
+		vLim(vLim)
+	{
+
+	}
+
+	virtual float refresh(float feedback)
+	{
+		float err;
+		err = target - feedback;
+
+		//初始时使微分为0，避免突然的巨大错误微分
+		if (isBegin)
+		{
+			errOld = err;
+			isBegin = false;
+		}
+
+		//如果在死区deadzone中，如果速度小于vLim，禁用I控制，减少D控制
+		if ((abs(err) < deadzone) && abs(err - errOld) < vLim)
+		{
+			feedforward = feedforwardH.call(target);
+			output = kp*err + integral + filter.getFilterOut(kd*0.5*(err - errOld))
+				+ feedforward;//FunctionPointer未绑定时默认返回0
+		}
+		else
+		{
+			//超过输出范围停止积分继续增加
+			if ((output > outputLimL && output < outputLimH) ||
+				(output == outputLimH && err < 0) ||
+				(output == outputLimL && err > 0))
+			{
+				float ek = (err + errOld) / 2;
+				integral += ki*fek(ek)*ek;
+			}
+			if (err>gearshiftPointL+ gearshiftPointH)
+			{
+				integral = 0;
+			}
+			feedforward = feedforwardH.call(target);
+			output = kp*err + integral + filter.getFilterOut(kd*(err - errOld))
+				+ feedforward;//FunctionPointer未绑定时默认返回0
+		}
+		limit<float>(output, outputLimL, outputLimH);
+
+		errOld = err;
+		return output;
+	}
+};
+
 //平板小球基类，板材为正方形
 //固定io口配置：舵机、led灯
 //包含基本PID控制接口：（使能）、（恢复水平）、设置目标值。PID参数固定
@@ -35,7 +107,7 @@ class BallOnPlateBase
 	//pid参数
 	float targetXFiltered, targetYFiltered, targetXraw, targetYraw;
 	static const float factorPID;
-	PIDFeforGshifIntIncDiff pidX, pidY;
+	PIDBallOnPlate pidX, pidY;
 	RcFilter filterOutX, filterOutY, filterTargetX, filterTargetY;
 	float outX, outY;
 	//pid中断中回调的函数指针
@@ -103,9 +175,9 @@ public:
 		feedforwardSysX((float*)feedforwardSysH, 3), feedforwardSysY((float*)feedforwardSysH, 3),
 		targetXFiltered(maxPos / 2), targetYFiltered(maxPos / 2), targetXraw(targetXFiltered), targetYraw(targetYFiltered),
 		//pid参数
-		pidX(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 5),
-		pidY(0.25f*factorPID, 0.2f*factorPID, 0.14f*factorPID, 1.f / ratePID, 5),
-		filterOutX(ratePID, 12), filterOutY(ratePID, 12), filterTargetX(ratePID, 0.5), filterTargetY(ratePID, 0.5),
+		pidX(0.3f*factorPID, 0.2f*factorPID, 0.2f*factorPID, 1.f / ratePID, 5, 7, 2),
+		pidY(0.3f*factorPID, 0.2f*factorPID, 0.2f*factorPID, 1.f / ratePID, 5, 7, 2),
+		filterOutX(ratePID, 15), filterOutY(ratePID, 15), filterTargetX(ratePID, 0.5), filterTargetY(ratePID, 0.5),
 		servoX(&PB9, 200, 0.75, 2.05), servoY(&PB8, 200, 0.85, 2.15),
 		//照明
 		ws2812(&PB0)
@@ -120,12 +192,12 @@ public:
 		fpsPID.begin();
 		pidX.setTarget(maxPos / 2);
 		pidX.setOutputLim(-100, 100);
-		pidX.setGearshiftPoint(30, 100);
+		pidX.setGearshiftPoint(7, 20);
 		pidX.attachFeedForwardH(&feedforwardSysX, &SysWithOnlyZero::getY);
 
 		pidY.setTarget(maxPos / 2);
 		pidY.setOutputLim(-100, 100);
-		pidY.setGearshiftPoint(30, 100);
+		pidY.setGearshiftPoint(7, 20);
 		pidY.attachFeedForwardH(&feedforwardSysY, &SysWithOnlyZero::getY);
 
 		//动力
