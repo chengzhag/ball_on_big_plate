@@ -20,18 +20,22 @@
 //	PIDBallOnPlate
 //};
 
-////为木板平板小球设计的死区PID
-////在死区deadzone中，如果速度小于vLim，禁用I控制
+//为木板平板小球设计的死区PID
+//前馈补偿变速积分不完全微分PID
+//输入带滤波器，等效于微分先行PID
+//在死区deadzone中，如果速度小于vLim，禁用I控制
 class PIDBallOnPlate :public PIDFeforGshifIntIncDiff, public PIDDeadzone
 {
 	float vLim;
+	RcFilter filterFor;
 public:
 	PIDBallOnPlate(float kp = 0, float ki = 0, float kd = 0,
 		float interval = 0.01, float stopFrq = 50, float deadzone = 0, float vLim = 0) :
 		PIDPosition(kp, ki, kd, interval),
 		PIDFeforGshifIntIncDiff(kp, ki, kd, interval, stopFrq),
 		PIDDeadzone(kp, ki, kd, interval, deadzone),
-		vLim(vLim)
+		vLim(vLim),
+		filterFor(1/interval,1)
 	{
 
 	}
@@ -48,10 +52,10 @@ public:
 			isBegin = false;
 		}
 
+		feedforward = filterFor.getFilterOut(feedforwardH.call(target));
 		//如果在死区deadzone中，如果速度小于vLim，禁用I控制，减少D控制
 		if ((abs(err) < deadzone) && abs(err - errOld) < vLim)
 		{
-			feedforward = feedforwardH.call(target);
 			output = kp*err + integral + filter.getFilterOut(kd*0.5*(err - errOld))
 				+ feedforward;//FunctionPointer未绑定时默认返回0
 		}
@@ -70,7 +74,6 @@ public:
 			{
 				integral = 0;
 			}
-			feedforward = feedforwardH.call(target);
 			output = kp*err + integral + filter.getFilterOut(kd*(err - errOld))
 				+ feedforward;//FunctionPointer未绑定时默认返回0
 		}
@@ -110,7 +113,7 @@ protected:
 	//pid参数
 	float targetXFiltered, targetYFiltered, targetXraw, targetYraw;
 	static const float factorPID;
-	PIDBallOnPlate pidX, pidY;
+	PIDGshifIntIncDiff pidX, pidY;
 	RcFilter filterOutX, filterOutY, filterTargetX, filterTargetY;
 	float outX, outY;
 	//pid中断中回调的函数指针
@@ -179,9 +182,9 @@ public:
 		feedforwardSysX((float*)feedforwardSysH, 3), feedforwardSysY((float*)feedforwardSysH, 3),
 		targetXFiltered(maxPos / 2), targetYFiltered(maxPos / 2), targetXraw(targetXFiltered), targetYraw(targetYFiltered),
 		//pid参数
-		pidX(0.3f*factorPID, 0.5f*factorPID, 0.16f*factorPID, 1.f / ratePID, 5, 6, 2),
-		pidY(0.3f*factorPID, 0.5f*factorPID, 0.16f*factorPID, 1.f / ratePID, 5, 6, 2),
-		filterOutX(ratePID, 15), filterOutY(ratePID, 15), filterTargetX(ratePID, 0.5), filterTargetY(ratePID, 0.5),
+		pidX(0.25f*factorPID, 0.f*factorPID, 0.16f*factorPID, 1.f / ratePID, 5),//I=0.5, deadzone=6, vLim=2
+		pidY(0.25f*factorPID, 0.f*factorPID, 0.16f*factorPID, 1.f / ratePID, 5),
+		filterOutX(ratePID, 15), filterOutY(ratePID, 15), filterTargetX(ratePID, 0.3), filterTargetY(ratePID, 0.3),
 		servoX(&PB9, 200, 0.75, 2.05), servoY(&PB8, 200, 0.85, 2.15),
 		//照明
 		ws2812(&PB0)
@@ -197,12 +200,12 @@ public:
 		pidX.setTarget(maxPos / 2);
 		pidX.setOutputLim(-100, 100);
 		pidX.setGearshiftPoint(20, 100);
-		pidX.attachFeedForwardH(&feedforwardSysX, &SysWithOnlyZero::getY);
+		//pidX.attachFeedForwardH(&feedforwardSysX, &SysWithOnlyZero::getY);
 
 		pidY.setTarget(maxPos / 2);
 		pidY.setOutputLim(-100, 100);
 		pidY.setGearshiftPoint(20, 100);
-		pidY.attachFeedForwardH(&feedforwardSysY, &SysWithOnlyZero::getY);
+		//pidY.attachFeedForwardH(&feedforwardSysY, &SysWithOnlyZero::getY);
 
 		//动力
 		servoX.begin();
@@ -262,12 +265,12 @@ public:
 		targetYraw = y;
 	}
 	//获取原始目标X
-	float getTargetXraw()
+	float getTargetXRaw()
 	{
 		return targetXraw;
 	}
 	//获取原始目标Y
-	float getTargetYraw()
+	float getTargetYRaw()
 	{
 		return targetYraw;
 	}
@@ -316,22 +319,22 @@ public:
 		return outY;
 	}
 
-	//获取前馈控制量
-	void getFeedforward(float* x, float* y)
-	{
-		*x = pidX.getFeedforward();
-		*y = pidY.getFeedforward();
-	}
-	//获取X前馈控制量
-	float getFeedforwardX()
-	{
-		return pidX.getFeedforward();
-	}
-	//获取Y前馈控制量
-	float getFeedforwardY()
-	{
-		return pidY.getFeedforward();
-	}
+	////获取前馈控制量
+	//void getFeedforward(float* x, float* y)
+	//{
+	//	*x = pidX.getFeedforward();
+	//	*y = pidY.getFeedforward();
+	//}
+	////获取X前馈控制量
+	//float getFeedforwardX()
+	//{
+	//	return pidX.getFeedforward();
+	//}
+	////获取Y前馈控制量
+	//float getFeedforwardY()
+	//{
+	//	return pidY.getFeedforward();
+	//}
 
 	//小球是否在板上
 	bool getIsBallOn()
@@ -584,8 +587,12 @@ public:
 		{
 			stepNow = stepAll;
 			isEnd = true;
+			*next = y;
 		}
-		*next = x + (y - x)*stepNow / stepAll;
+		else
+		{
+			*next = x + (y - x)*stepNow / stepAll;
+		}
 		return isEnd;
 	}
 
@@ -691,12 +698,13 @@ class BallOnPlatePath :protected BallOnPlatePathIndex
 		return false;
 	}
 protected:
-	static const float circleX[9], circleY[9];//9个圆的坐标
 	float safeX[4], safeY[4];//4个安全圆的坐标
 	SpeedControl generatorX, generatorY;//生成xy方向一维目标坐标
 	int pathIndex;//标志当前在BallOnPlatePathIndex中路径的下标，范围0 ~ getPathLength()-2
 	float speed;
 public:
+	static const float circleX[9], circleY[9];//9个圆的坐标
+
 	BallOnPlatePath(float interval) :
 		BallOnPlatePathIndex(),
 		generatorX(interval), generatorY(interval),
@@ -733,11 +741,21 @@ public:
 		{
 			if (moveOn())
 			{
+				//获取终点实际坐标值
+				float dstX, dstY;
+				dstX = circleX[getDst()]; dstY = circleY[getDst()];
+
+				*x = dstX;
+				*y = dstY;
 				return true;
 			}
 		}
+
 		generatorX.getNext(x);
 		generatorY.getNext(y);
+
+
+		return false;
 	}
 
 	bool isEnd()
@@ -749,6 +767,11 @@ public:
 		else {
 			return false;
 		}
+	}
+
+	void stop()
+	{
+		pathIndex = pathLength - 1;
 	}
 
 };
@@ -790,20 +813,8 @@ public:
 	{
 		float xRaw, yRaw;
 		bool isEnd = BallOnPlatePath::getNext(&xRaw, &yRaw);
-		if (isEnd==false)
-		{
-			*x = filterX.getFilterOut(xRaw);
-			*y = filterY.getFilterOut(yRaw);
-		}
-		else
-		{
-			//获取终点实际坐标值
-			float dstX, dstY;
-			dstX = circleX[getDst()]; dstY = circleY[getDst()];
-
-			*x = filterX.getFilterOut(dstX);
-			*y = filterY.getFilterOut(dstY);
-		}
+		*x = filterX.getFilterOut(xRaw);
+		*y = filterY.getFilterOut(yRaw);
 
 		return isEnd;
 	}
@@ -825,18 +836,59 @@ class BallOnPlate:public BallOnPlateBase
 {
 protected:
 	BallOnPlatePath path;
+	int targetCircle;
+
+	//PID中断函数，添加路径刷新对目标点的设置
+	virtual void posReceiveEvent(UartNum<float, 2>* uartNum)
+	{
+		if (!path.isEnd() && getIsBallOn())
+		{
+			refreshPath();
+		}
+		BallOnPlateBase::posReceiveEvent(uartNum);
+	}
+
 public:
 	BallOnPlate() :
-		path(getIntervalPID())
+		path(getIntervalPID()),
+		targetCircle(4)
 	{
 
 	}
 
+	//设置目标圆，直线逼近
+	void setTargetCircle(int index)
+	{
+		targetCircle = index;
+		setTarget(path.circleX[index], path.circleY[index]);
+	}
+
+	//球是否进入目标圆
+	bool isBallInCircle(int index)
+	{
+		if (abs(path.circleX[index]-getPosX())<10
+			&& abs(path.circleY[index] - getPosY())<10)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	//设置目标圆，从当前目标圆逼近
+	void startPath(int dst, float speed)
+	{
+		startPath(targetCircle, dst, speed);
+		targetCircle = dst;
+	}
 
 	//设置路径
 	void startPath(int src, int dst, float speed)
 	{
 		path.setPathTime(src, dst, speed);
+		targetCircle = dst;
 	}
 
 	//刷新路径
@@ -848,13 +900,9 @@ public:
 		return isEnd;
 	}
 
-	//PID中断函数，添加路径刷新对目标点的设置
-	virtual void posReceiveEvent(UartNum<float, 2>* uartNum)
+	//停止路径
+	void stopPath()
 	{
-		if (!path.isEnd())
-		{
-			refreshPath();
-		}
-		BallOnPlateBase::posReceiveEvent(uartNum);
+		path.stop();
 	}
 };

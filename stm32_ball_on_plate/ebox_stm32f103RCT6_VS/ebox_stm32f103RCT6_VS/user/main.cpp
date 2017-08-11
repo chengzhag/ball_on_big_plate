@@ -40,10 +40,14 @@ Led led(&PD2, 1);
 OLEDI2C oled(&i2c1);
 
 
-//收到定位坐标立即进行PID运算
-//将输出存入outXY到舵机刷新程序输出
-//UI交互
-int index = 0;
+//按键交互
+int numIndex = 0;
+int task = 0;
+bool inProgress = false;
+bool isReady=false;
+bool isEnd = true;
+TicToc taskTimer;
+
 float circleR = 0;
 float theta = 0;
 const float rateCircle = 0.2;
@@ -57,13 +61,15 @@ void posReceiveEvent()
 
 	if (keyR.click())
 	{
-		index++;
+		numIndex++;
 	}
 	if (keyL.click())
 	{
-		index--;
+		numIndex--;
 	}
-	limit<int>(index, 0, 2);
+
+	//总共7个部分，0部分用作调试
+	limit<int>(numIndex, 0, 5);
 
 	//按键响应
 	float increase = 0;
@@ -77,49 +83,106 @@ void posReceiveEvent()
 	}
 	if (keyU.pressed_for(200, 0))
 	{
-		increase += 2;
+		increase += 1;
 	}
 	if (keyD.pressed_for(200, 0))
 	{
-		increase -= 2;
+		increase -= 1;
 	}
 	if (keyR.pressed_for(5000, 1))
 	{
 		ballOnplate.shutdownRasp();
 	}
 
-	float targetXraw = ballOnplate.getTargetXraw();
-	float targetYraw = ballOnplate.getTargetYraw();
-	switch (index)
+	//float targetXraw = ballOnplate.getTargetXRaw();
+	//float targetYraw = ballOnplate.getTargetYRaw();
+	switch (numIndex)
 	{
 	case 0:
-		targetXraw += increase;
-		limit<float>(targetXraw, 30, ballOnplate.getPosMax() - 30);
+		task += increase;
+		limit(task, 0, 7);
+		if (increase != 0)
+		{
+			inProgress = false;
+			isReady = false;
+		}
 		break;
 	case 1:
-		targetYraw += increase;
-		limit<float>(targetYraw, 30, ballOnplate.getPosMax() - 30);
-		break;
-	case 2:
-		circleR = circleR + increase;
-		limit<float>(circleR, 0, (ballOnplate.getPosMax() - 100) / 2);
-		theta += 2 * PI *ballOnplate.getIntervalPID() * rateCircle;//0.5圈一秒
-		targetXraw = ballOnplate.getPosMax() / 2 + circleR*sin(theta);
-		targetYraw = ballOnplate.getPosMax() / 2 + circleR*cos(theta);
-		break;
+		//选择键按下
+		if (increase != 0 && inProgress == false)
+		{
+			inProgress = true;
+			//开始任务
+			switch (task)
+			{
+			case 0:
+				ballOnplate.setTargetCircle(4);
+				break;
+			case 1:
+				ballOnplate.setTargetCircle(1);
+				break;
+			case 2:
+				ballOnplate.startPath(0, 4, 100);
+				break;
+			default:
+				break;
+			}
+		}
+		else if (increase != 0 && inProgress == true)
+		{
+			ballOnplate.stopPath();
+			inProgress = false;
+			isReady = false;
+		}
+	//case 1:
+	//	targetYraw += increase;
+	//	limit<float>(targetYraw, 30, ballOnplate.getPosMax() - 30);
+	//	break;
+	//case 2:
+	//	circleR = circleR + increase;
+	//	limit<float>(circleR, 0, (ballOnplate.getPosMax() - 100) / 2);
+	//	theta += 2 * PI *ballOnplate.getIntervalPID() * rateCircle;//0.5圈一秒
+	//	targetXraw = ballOnplate.getPosMax() / 2 + circleR*sin(theta);
+	//	targetYraw = ballOnplate.getPosMax() / 2 + circleR*cos(theta);
+	//	break;
 	default:
 		break;
 	}
 
-	ballOnplate.setTarget(targetXraw, targetYraw);
+	//任务进行
+	switch (task)
+	{
+	case 2:
+		//if (isReady == false)
+		//{
+		//	if (ballOnplate.isBallInCircle(0))
+		//	{
+		//		isReady = true;
+		//		isEnd = false;
+		//		taskTimer.tic();
+		//	}
+		//}
+		//if (isReady == true && taskTimer.toc() > 2 && isEnd == false)
+		//{
+		//	isEnd = true;
+		//	ballOnplate.startPath(0, 4, 50);
+		//}
+	default:
+		break;
+	}
 
-	//float vscan[] = { 
-	//	ballOnplate.getPosX(),ballOnplate.getPosY()
-	//	,ballOnplate.getOutX(),ballOnplate.getOutY()
-	//	,ballOnplate.getFeedforwardX(),ballOnplate.getFeedforwardY()
-	//	,ballOnplate.getTargetXFiltered(),ballOnplate.getTargetYFiltered()
-	//};
-	//uartVscan.sendOscilloscope(vscan, 8);
+	//ballOnplate.setTarget(targetXraw, targetYraw);
+	
+	float vscan[] = {
+		ballOnplate.getPosX(),ballOnplate.getPosY()
+		,ballOnplate.getOutX(),ballOnplate.getOutY()
+		,ballOnplate.getTargetXRaw(),ballOnplate.getTargetYRaw()
+		//,ballOnplate.getFeedforwardX(),ballOnplate.getFeedforwardY()
+		,ballOnplate.getTargetXFiltered(),ballOnplate.getTargetYFiltered()
+	};
+	uartVscan.sendOscilloscope(vscan, 8);
+
+	//调试
 	outX = ballOnplate.getOutX();
 	outY = ballOnplate.getOutY();
 }
@@ -143,24 +206,61 @@ void uiRefresh(void *pvParameters)
 			fpsPIDtemp = ballOnplate.getFps();
 		}
 
-		switch (index)
+		//显示任务标号
+		oled.printf(0, 0, Oledi2c_Font_8x16, "task:");
+		if (numIndex != 0)
 		{
-		case 0:
-			oled.printf(0, 0, 2, "*%.1f %.1f %.0f  ", ballOnplate.getTargetXraw(), ballOnplate.getTargetYraw(), circleR);
-			break;
-		case 1:
-			oled.printf(0, 0, 2, "%.1f *%.1f %.0f  ", ballOnplate.getTargetXraw(), ballOnplate.getTargetYraw(), circleR);
-			break;
-		case 2:
-			oled.printf(0, 0, 2, "%.1f %.1f *%.0f  ", ballOnplate.getTargetXraw(), ballOnplate.getTargetYraw(), circleR);
-			break;
-		default:
-			break;
+			oled.printf(40, 0, Oledi2c_Font_8x16, "%d",task);
 		}
-		oled.printf(0, 2, 2, "%-8.1f%-8.1f", ballOnplate.getPosX(), ballOnplate.getPosY());
-		fpsUItemp = fpsUI.getFps();
-		oled.printf(0, 4, 2, "%-8.0f%-8.0f", fpsPIDtemp, fpsUItemp);
+		else
+		{
+			oled.printf(40, 0, Oledi2c_Font_8x16_Inv, "%d", task);
+		}
 
+		//显示开始按键
+		if (numIndex != 1)
+		{
+			if (inProgress == false)
+			{
+				oled.printf(64, 0, Oledi2c_Font_8x16, "start");
+			}
+			else 
+			{
+				oled.printf(64, 0, Oledi2c_Font_8x16, "stop ");
+			}
+		}
+		else
+		{
+			if (inProgress == false)
+			{
+				oled.printf(64, 0, Oledi2c_Font_8x16_Inv, "start");
+			}
+			else
+			{
+				oled.printf(64, 0, Oledi2c_Font_8x16_Inv, "stop ");
+			}
+		}
+		
+
+		//switch (numIndex)
+		//{
+		//case 0:
+		//	oled.printf(0, 0, 2, "*%.1f %.1f %.0f  ", ballOnplate.getTargetXraw(), ballOnplate.getTargetYraw(), circleR);
+		//	break;
+		//case 1:
+		//	oled.printf(0, 0, 2, "%.1f *%.1f %.0f  ", ballOnplate.getTargetXraw(), ballOnplate.getTargetYraw(), circleR);
+		//	break;
+		//case 2:
+		//	oled.printf(0, 0, 2, "%.1f %.1f *%.0f  ", ballOnplate.getTargetXraw(), ballOnplate.getTargetYraw(), circleR);
+		//	break;
+		//default:
+		//	break;
+		//}
+
+		oled.printf(0, 5, Oledi2c_Font_6x8, "%-8.1f%-8.1f", ballOnplate.getTargetXRaw(), ballOnplate.getTargetYRaw());
+		oled.printf(0, 6, Oledi2c_Font_6x8, "%-8.1f%-8.1f", ballOnplate.getPosX(), ballOnplate.getPosY());
+		fpsUItemp = fpsUI.getFps();
+		oled.printf(0, 7, Oledi2c_Font_6x8, "%-8.0f%-8.0f", fpsPIDtemp, fpsUItemp);
 
 		vTaskDelayUntil(&xLastWakeTime, uiRefreshDelay);
 	}
@@ -183,6 +283,7 @@ void setup()
 	ebox_init();
 	ballOnplate.attachAfterPIDEvent(posReceiveEvent);
 	ballOnplate.begin();
+
 
 	//调试
 	uart1.begin(115200);
