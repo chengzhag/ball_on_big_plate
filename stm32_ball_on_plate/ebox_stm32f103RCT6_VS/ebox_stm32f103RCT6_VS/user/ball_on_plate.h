@@ -522,22 +522,45 @@ public:
 				}
 				else if (src == 1)
 				{
-					pathPointIndex[1] = 12;
+					pathPointIndex[1] = 9;
 				}
 				else if (src == 2)
 				{
-					pathPointIndex[1] = 10;
+					pathPointIndex[1] = 12;
 				}
 				else if (src == 3)
 				{
-					pathPointIndex[1] = 9;
+					pathPointIndex[1] = 10;
 				}
 				pathPointIndex[2] = 9 + dst;
+				pathLength = 3;
 			}
 			else
 			{
 				pathPointIndex[1] = 9 + dst;
+				pathLength = 2;
 			}
+		}
+		//起点终点两者都有
+		else
+		{
+			//转换坐标
+			int srcX, srcY;
+			int dstX, dstY;
+			if (src >= 9)
+			{
+				src -= 9;
+				srcX = src % 2, srcY = src / 2;
+				dstX = dst % 3, dstY = dst / 3;
+			}
+			if (dst >= 9)
+			{
+				dst -= 9;
+				srcX = src % 3, srcY = src / 3;
+				dstX = dst % 2, dstY = dst / 2;
+			}
+			//相邻
+
 		}
 		
 	}
