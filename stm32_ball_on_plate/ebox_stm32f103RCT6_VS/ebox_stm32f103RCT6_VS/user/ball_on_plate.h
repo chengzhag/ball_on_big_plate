@@ -57,9 +57,10 @@ public:
 		else
 		{
 			//超过输出范围停止积分继续增加
-			if ((output > outputLimL && output < outputLimH) ||
+			if (((output > outputLimL && output < outputLimH) ||
 				(output == outputLimH && err < 0) ||
 				(output == outputLimL && err > 0))
+				&& err - errOld < 0)
 			{
 				float ek = (err + errOld) / 2;
 				integral += ki*fek(ek)*ek;
@@ -175,8 +176,8 @@ public:
 		feedforwardSysX((float*)feedforwardSysH, 3), feedforwardSysY((float*)feedforwardSysH, 3),
 		targetXFiltered(maxPos / 2), targetYFiltered(maxPos / 2), targetXraw(targetXFiltered), targetYraw(targetYFiltered),
 		//pid参数
-		pidX(0.3f*factorPID, 0.2f*factorPID, 0.2f*factorPID, 1.f / ratePID, 5, 7, 2),
-		pidY(0.3f*factorPID, 0.2f*factorPID, 0.2f*factorPID, 1.f / ratePID, 5, 7, 2),
+		pidX(0.3f*factorPID, 0.5f*factorPID, 0.16f*factorPID, 1.f / ratePID, 5, 6, 2),
+		pidY(0.3f*factorPID, 0.5f*factorPID, 0.16f*factorPID, 1.f / ratePID, 5, 6, 2),
 		filterOutX(ratePID, 15), filterOutY(ratePID, 15), filterTargetX(ratePID, 0.5), filterTargetY(ratePID, 0.5),
 		servoX(&PB9, 200, 0.75, 2.05), servoY(&PB8, 200, 0.85, 2.15),
 		//照明
@@ -192,12 +193,12 @@ public:
 		fpsPID.begin();
 		pidX.setTarget(maxPos / 2);
 		pidX.setOutputLim(-100, 100);
-		pidX.setGearshiftPoint(7, 20);
+		pidX.setGearshiftPoint(20, 100);
 		pidX.attachFeedForwardH(&feedforwardSysX, &SysWithOnlyZero::getY);
 
 		pidY.setTarget(maxPos / 2);
 		pidY.setOutputLim(-100, 100);
-		pidY.setGearshiftPoint(7, 20);
+		pidY.setGearshiftPoint(20, 100);
 		pidY.attachFeedForwardH(&feedforwardSysY, &SysWithOnlyZero::getY);
 
 		//动力
