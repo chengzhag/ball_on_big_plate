@@ -388,3 +388,108 @@ const float BallOnPlateBase::feedforwardSysH[3] =
 { 1 / gzDenominator,-2 / gzDenominator,1 / gzDenominator };
 //pid参数
 const float BallOnPlateBase::factorPID = 3.7;
+
+
+//路径生成类
+//生成规定时间内从x到y的匀速路径
+class SpeedControl
+{
+	//设置始末数值
+	void setBeginEnd(float x, float y)
+	{
+		this->x = x;
+		this->y = y;
+	}
+
+	//设置时间间隔和速度
+	void setSpeed(float v)
+	{
+		v = abs(v);
+		setTime(abs(y - x) / v);
+	}
+
+	//设置时间间隔和路径总时间
+	void setTime(float time)
+	{
+		stepAll = time / interval;
+		stepNow = 0;
+	}
+
+protected:
+	float x, y, interval;
+	int stepAll, stepNow;
+
+public:
+	SpeedControl(float interval):
+		interval(interval)
+	{
+
+	}
+
+	//设置路径的终点起点和时间
+	virtual void setPathTime(float x, float y, float time)
+	{
+		setBeginEnd(x, y);
+		setTime(time);
+	}
+
+	//设置路径的终点起点和速度
+	virtual void setPathSpeed(float x, float y, float speed)
+	{
+		setBeginEnd(x, y);
+		setSpeed(speed);
+	}
+
+	//获取路径的下一点
+	virtual float getNext()
+	{
+		stepNow += 1;
+		if (stepNow > stepAll)
+		{
+			stepNow = stepAll;
+		}
+		float next = x + (y - x)*stepNow / stepAll;
+		return next;
+	}
+};
+
+class SpeedControlSoft:public SpeedControl
+{
+protected:
+	RcFilter filter;
+public:
+	SpeedControlSoft(float interval) :
+		SpeedControl(interval),
+		filter(1 / interval, 1)
+	{
+
+	}
+	
+	//设置路径的终点起点和时间
+	virtual void setPathTime(float x, float y, float time)
+	{
+		filter.setInit(x);
+		SpeedControl::setPathTime(x, y, time);
+	}
+
+	//设置路径的终点起点和速度
+	virtual void setPathSpeed(float x, float y, float speed)
+	{
+		filter.setInit(x);
+		SpeedControl::setPathSpeed(x, y, speed);
+	}
+
+	//获取路径的下一点
+	virtual float getNext()
+	{
+		float next=SpeedControl::getNext();
+		next = filter.getFilterOut(next);
+		return next;
+	}
+
+	//设置滤波器截止频率
+	void setStopFre(float fre)
+	{
+		filter.setStopFrq(fre);
+	}
+};

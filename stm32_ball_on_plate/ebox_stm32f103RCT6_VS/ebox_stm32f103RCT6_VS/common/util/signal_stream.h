@@ -132,6 +132,9 @@ public:
 
 	//清除上一次输出
 	void clear();
+
+	//设置滤波器初态
+	void setInit(float y);
 };
 
 //z变换表示的离散系统
