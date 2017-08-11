@@ -67,9 +67,9 @@ void posReceiveEvent()
 		numIndex--;
 	}
 
-	//总共7个部分，0部分用作调试
-	limit<int>(numIndex, 0, 5);
+	limit<int>(numIndex, 0, 6);
 
+	//总共7个部分，0部分用作调试
 	//按键响应
 	float increase = 0;
 	if (keyU.click())
@@ -88,10 +88,7 @@ void posReceiveEvent()
 	{
 		increase -= 1;
 	}
-	if (keyR.pressed_for(5000, 1))
-	{
-		ballOnPlate.shutdownRasp();
-	}
+
 
 
 	switch (numIndex)
@@ -111,22 +108,22 @@ void posReceiveEvent()
 			case 0://任务0，归中
 				if (isnan(ballOnPlate.getPosX()))//防止准备时速度太快冲出平板
 				{
-					ballOnPlate.startPath(4, 4, 100);
+					ballOnPlate.setPath(4, 4, 100);
 				}
 				else
 				{
-					ballOnPlate.startPath(4, 100);
+					ballOnPlate.setPath(4, 100);
 				}
 				stage = 1;
 				break;
 			case 1://任务1，2稳定5
 				if (isnan(ballOnPlate.getPosX()))
 				{
-					ballOnPlate.startPath(1, 1, 100);
+					ballOnPlate.setPath(1, 1, 100);
 				}
 				else
 				{
-					ballOnPlate.startPath(1, 100);
+					ballOnPlate.setPath(1, 100);
 				}
 				stage = 1;
 				break;
@@ -135,18 +132,18 @@ void posReceiveEvent()
 				{
 					if (isnan(ballOnPlate.getPosX()))
 					{
-						ballOnPlate.startPath(0, 0, 100);
+						ballOnPlate.setPath(0, 0, 100);
 					}
 					else
 					{
-						ballOnPlate.startPath(0, 100);
+						ballOnPlate.setPath(0, 100);
 					}
 					stage = 1;
 				}
 				else if (stage == 1)
 				{
 					timerUI.tic();
-					ballOnPlate.startPath(0, 4, 100);
+					ballOnPlate.setPath(0, 4, 100);
 					stage = 2;
 				}
 				break;
@@ -155,18 +152,18 @@ void posReceiveEvent()
 				{
 					if (isnan(ballOnPlate.getPosX()))
 					{
-						ballOnPlate.startPath(0, 0, 100);
+						ballOnPlate.setPath(0, 0, 100);
 					}
 					else
 					{
-						ballOnPlate.startPath(0, 100);
+						ballOnPlate.setPath(0, 100);
 					}
 					stage = 1;
 				}
 				else if (stage == 1)
 				{
 					timerUI.tic();
-					ballOnPlate.startPath(0, 3, 100);
+					ballOnPlate.setPath(0, 3, 100);
 					timerTask.tic();
 					stage = 2;
 				}
@@ -176,18 +173,18 @@ void posReceiveEvent()
 				{
 					if (isnan(ballOnPlate.getPosX()))
 					{
-						ballOnPlate.startPath(0, 0, 100);
+						ballOnPlate.setPath(0, 0, 100);
 					}
 					else
 					{
-						ballOnPlate.startPath(0, 100);
+						ballOnPlate.setPath(0, 100);
 					}
 					stage = 1;
 				}
 				else if (stage == 1)
 				{
 					timerUI.tic();
-					ballOnPlate.startPath(0, 8, 100);
+					ballOnPlate.setPath(0, 8, 100);
 					stage = 2;
 				}
 				
@@ -197,18 +194,18 @@ void posReceiveEvent()
 				{
 					if (isnan(ballOnPlate.getPosX()))
 					{
-						ballOnPlate.startPath(0, 0, 100);
+						ballOnPlate.setPath(0, 0, 100);
 					}
 					else
 					{
-						ballOnPlate.startPath(0, 100);
+						ballOnPlate.setPath(0, 100);
 					}
 					stage = 1;
 				}
 				else if (stage == 1)
 				{
 					timerUI.tic();
-					ballOnPlate.startPath(0, 1, 100);
+					ballOnPlate.setPath(0, 1, 100);
 					timerTask.tic();
 					stage = 2;
 				}
@@ -218,11 +215,11 @@ void posReceiveEvent()
 				{
 					if (isnan(ballOnPlate.getPosX()))
 					{
-						ballOnPlate.startPath(abcd[0], abcd[0], speedTask6);
+						ballOnPlate.setPath(abcd[0], abcd[0], speedTask6);
 					}
 					else
 					{
-						ballOnPlate.startPath(abcd[0], speedTask6);
+						ballOnPlate.setPath(abcd[0], speedTask6);
 					}
 					
 					stage = 1;
@@ -230,7 +227,7 @@ void posReceiveEvent()
 				else if (stage == 1)
 				{
 					timerUI.tic();
-					ballOnPlate.startPath(abcd[0], abcd[1], speedTask6);
+					ballOnPlate.setPath(abcd[0], abcd[1], speedTask6);
 					timerTask.tic();
 					stage = 2;
 				}
@@ -263,6 +260,12 @@ void posReceiveEvent()
 		abcd[3] += increase;
 		limit(abcd[3], 0, 8);
 		break;
+	case 6:
+		if (increase != 0)
+		{
+			ballOnPlate.shutdownRasp();
+		}
+		break;
 	default:
 		break;
 	}
@@ -283,33 +286,33 @@ void posReceiveEvent()
 	case 3:
 		if (timerTask.toc() > 5000 && stage == 2)
 		{
-			ballOnPlate.startPath(3, 4, 100);
+			ballOnPlate.setPath(3, 4, 100);
 			stage = 3;
 		}
 		break;
 	case 5:
 		if (timerTask.toc() > 3000 && stage == 2)
 		{
-			ballOnPlate.startPath(1, 5, 100);
+			ballOnPlate.setPath(1, 5, 100);
 			stage = 3;
 			timerTask.tic();
 		}
 		else if (timerTask.toc() > 4000 && stage == 3)
 		{
-			ballOnPlate.startPath(5, 8, 100);
+			ballOnPlate.setPath(5, 8, 100);
 			stage = 4;
 		}
 		break;
 	case 6:
 		if (timerTask.toc() > 5000 && stage == 2)
 		{
-			ballOnPlate.startPath(abcd[1], abcd[2], speedTask6);
+			ballOnPlate.setPath(abcd[1], abcd[2], speedTask6);
 			stage = 3;
 			timerTask.tic();
 		}
 		else if (timerTask.toc() > 5000 && stage == 3)
 		{
-			ballOnPlate.startPath(abcd[2], abcd[3], speedTask6);
+			ballOnPlate.setPath(abcd[2], abcd[3], speedTask6);
 			stage = 4;
 		}
 		break;
@@ -330,13 +333,6 @@ void posReceiveEvent()
 	//调试
 	outX = ballOnPlate.getOutX();
 	outY = ballOnPlate.getOutY();
-	//float point[3];
-	//bool isEnd = path.getNext(point, point + 1);
-	//if (isEnd)
-	//{
-	//	point[2] = 100;
-	//}
-	//uartVscan.sendOscilloscope(point, 3);
 }
 
 //UI交互
@@ -415,6 +411,16 @@ void uiRefresh(void *pvParameters)
 			}
 			
 		}
+
+		//显示关机按键
+		if (numIndex==6)
+		{
+			oled.printf(24, 4, Oledi2c_Font_6x8_Inv, "shutdown");
+		}
+		else
+		{
+			oled.printf(24, 4, Oledi2c_Font_6x8, "shutdown");
+		}
 		
 		//显示计时
 		if (stage >= 2)
@@ -436,7 +442,7 @@ void setup()
 	ebox_init();
 	ballOnPlate.attachAfterPIDEvent(posReceiveEvent);
 	ballOnPlate.begin();
-	ballOnPlate.startPath(4, 4, 100);//归中
+	ballOnPlate.setPath(4, 4, 100);//归中
 
 
 	//调试

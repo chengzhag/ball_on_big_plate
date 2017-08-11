@@ -834,36 +834,69 @@ const float BallOnPlatePath::circleY[9] = {
 };
 
 
+typedef enum
+{
+	BallOnPlate_Pos_Mode_Circle,
+	BallOnPlate_Pos_Mode_Point
+}BallOnPlate_Pos_Mode;
+
 class BallOnPlate :public BallOnPlateBase
 {
 protected:
 	BallOnPlatePath path;
 	int targetCircle;
+	BallOnPlate_Pos_Mode mode;
 
 	//PID中断函数，添加路径刷新对目标点的设置
 	virtual void posReceiveEvent(UartNum<float, 2>* uartNum)
 	{
-		if (getIsBallOn())
+		if (mode== BallOnPlate_Pos_Mode_Circle)
 		{
-			refreshPath();
+			if (getIsBallOn())
+			{
+				refreshPath();
+			}
+		}else if (mode == BallOnPlate_Pos_Mode_Point)
+		{
 		}
+
 		BallOnPlateBase::posReceiveEvent(uartNum);
 	}
 
 public:
 	BallOnPlate() :
 		path(getIntervalPID()),
-		targetCircle(4)
+		targetCircle(4),
+		mode(BallOnPlate_Pos_Mode_Circle)
 	{
 
 	}
 
-	////设置目标圆，直线逼近
-	//void setTargetCircle(int index)
-	//{
-	//	targetCircle = index;
-	//	setTarget(path.circleX[index], path.circleY[index]);
-	//}
+	//设置小球控制模式
+	void setMode(BallOnPlate_Pos_Mode mode)
+	{
+		this->mode = mode;
+	}
+
+	//获取小球圆坐标
+	void getCircle(int index, float *x, float *y)
+	{
+		*x = path.circleX[index];
+		*y = path.circleY[index];
+	}
+
+	//获取小球圆X坐标
+	float getCircleX(int index)
+	{
+		return path.circleX[index];
+	}
+
+	//获取小球圆Y坐标
+	float getCircleY(int index)
+	{
+		return path.circleY[index];
+	}
+
 
 	//球是否进入目标圆
 	bool isBallInCircle(int index)
@@ -880,14 +913,14 @@ public:
 	}
 
 	//设置目标圆，从当前目标圆逼近
-	void startPath(int dst, float speed)
+	void setPath(int dst, float speed)
 	{
-		startPath(targetCircle, dst, speed);
+		setPath(targetCircle, dst, speed);
 		targetCircle = dst;
 	}
 
 	//设置路径
-	void startPath(int src, int dst, float speed)
+	void setPath(int src, int dst, float speed)
 	{
 		path.setPathTime(src, dst, speed);
 		targetCircle = dst;
@@ -906,5 +939,11 @@ public:
 	void stopPath()
 	{
 		path.stop();
+	}
+
+	//获取当前目标圆
+	int getTargetCircle()
+	{
+		return targetCircle;
 	}
 };
