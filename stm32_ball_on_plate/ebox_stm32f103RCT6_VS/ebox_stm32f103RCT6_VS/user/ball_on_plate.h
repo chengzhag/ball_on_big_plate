@@ -390,27 +390,15 @@ const float BallOnPlateBase::feedforwardSysH[3] =
 const float BallOnPlateBase::factorPID = 3.7;
 
 
-class BallOnPlatePath
+//路径点下标生成
+class BallOnPlatePathIndex
 {
 protected:
-	static const float circleX[9], circleY[9];//9个圆的坐标
-	float safeX[4], safeY[4];//4个安全圆的坐标
 	int pathPointIndex[128];//存储路径的下标
 	int pathLength;//路径的长度
 public:
-	BallOnPlatePath() 
+	BallOnPlatePathIndex() 
 	{
-		for (int i = 0; i < 4; i++)
-		{
-			int leftTopIndex = i / 2 * 3 + i % 2;
-			int rightTopIndex = leftTopIndex + 1;
-			int leftBotomIndex = leftTopIndex + 3;
-			int rightBotomIndex = leftTopIndex + 4;
-			safeX[i] = (circleX[leftTopIndex] + circleX[rightTopIndex]
-				+ circleX[leftBotomIndex] + circleX[rightBotomIndex]) / 4;
-			safeY[i] = (circleY[leftTopIndex] + circleY[rightTopIndex]
-				+ circleY[leftBotomIndex] + circleY[rightBotomIndex]) / 4;
-		}
 	}
 
 	//获取从src到dst圆所经过的路径
@@ -520,23 +508,10 @@ public:
 	{
 		return pathLength;
 	}
-	
 
 };
 
-const float BallOnPlatePath::circleX[9] = {
-	94.8847,298.129,498.131,
-	93.1718,299.301,507.667,
-	97.8807,300.759,504.591
-};
-const float BallOnPlatePath::circleY[9] = {
-	106.717,98.0838,98.9344,
-	303.629,301.297,298.753,
-	504.300,505.724,495.129
-};
-
-
-//路径生成类
+//一维路径生成类
 //生成规定时间内从x到y的匀速路径
 class SpeedControl
 {
@@ -587,15 +562,18 @@ public:
 	}
 
 	//获取路径的下一点
-	virtual float getNext()
+	//返回true表示完成路径
+	virtual bool getNext(float *next)
 	{
+		bool isEnd=false;
 		stepNow += 1;
 		if (stepNow > stepAll)
 		{
 			stepNow = stepAll;
+			isEnd = true;
 		}
-		float next = x + (y - x)*stepNow / stepAll;
-		return next;
+		*next = x + (y - x)*stepNow / stepAll;
+		return isEnd;
 	}
 };
 
@@ -626,11 +604,12 @@ public:
 	}
 
 	//获取路径的下一点
-	virtual float getNext()
+	//返回true表示完成路径
+	virtual bool getNext(float *output)
 	{
-		float next=SpeedControl::getNext();
-		next = filter.getFilterOut(next);
-		return next;
+		bool isEnd = SpeedControl::getNext(output);
+		*output = filter.getFilterOut(*output);
+		return isEnd;
 	}
 
 	//设置滤波器截止频率
@@ -638,4 +617,55 @@ public:
 	{
 		filter.setStopFrq(fre);
 	}
+};
+
+//任意两点路径获取与生成
+class BallOnPlatePath :private BallOnPlatePathIndex
+{
+protected:
+	static const float circleX[9], circleY[9];//9个圆的坐标
+	float safeX[4], safeY[4];//4个安全圆的坐标
+	SpeedControlSoft generatorX, generatorY;//生成xy方向一维目标坐标
+public:
+	BallOnPlatePath(float interval) :
+		BallOnPlatePathIndex(),
+		generatorX(interval), generatorY(interval)
+	{
+		//计算安全圆的坐标
+		for (int i = 0; i < 4; i++)
+		{
+			int leftTopIndex = i / 2 * 3 + i % 2;
+			int rightTopIndex = leftTopIndex + 1;
+			int leftBotomIndex = leftTopIndex + 3;
+			int rightBotomIndex = leftTopIndex + 4;
+			safeX[i] = (circleX[leftTopIndex] + circleX[rightTopIndex]
+				+ circleX[leftBotomIndex] + circleX[rightBotomIndex]) / 4;
+			safeY[i] = (circleY[leftTopIndex] + circleY[rightTopIndex]
+				+ circleY[leftBotomIndex] + circleY[rightBotomIndex]) / 4;
+		}
+	}
+
+	//设置路径的终点起点和时间
+	void setPathTime(int src, int dst, float time)
+	{
+		
+	}
+
+	//获取下一点的坐标，返回是否完成
+	bool getNext(float *x, float *y)
+	{
+
+	}
+
+};
+
+const float BallOnPlatePath::circleX[9] = {
+	94.8847,298.129,498.131,
+	93.1718,299.301,507.667,
+	97.8807,300.759,504.591
+};
+const float BallOnPlatePath::circleY[9] = {
+	106.717,98.0838,98.9344,
+	303.629,301.297,298.753,
+	504.300,505.724,495.129
 };

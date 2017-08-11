@@ -99,8 +99,11 @@
 "common\edriver\servo.h", line 43 : warning : #1-D: last line of file ends without a newline
     #endif
           ^
-  user/main.cpp: 33 warnings, 0 errors
-  Program Size: Code=70650 RO-data=5294 RW-data=424 ZI-data=16240  
+"user/ball_on_plate.h", line 658 : warning : #940-D: missing return statement at end of non-void function "BallOnPlatePath::getNext"
+    	}
+    	^
+  user/main.cpp: 34 warnings, 0 errors
+  Program Size: Code=70522 RO-data=5334 RW-data=424 ZI-data=15728  
   C:\SysGCC\arm-eabi/bin/arm-eabi-objcopy.exe: Debug/ebox_stm32f103RCT6_VS.axf: warning: Empty loadable segment detected, is this intentional ?
   C:\SysGCC\arm-eabi/bin/arm-eabi-objcopy.exe: Debug/ebox_stm32f103RCT6_VS.elf: warning: allocated section `ER_RW' not in segment
   C:\SysGCC\arm-eabi/bin/arm-eabi-objcopy.exe: Debug/ebox_stm32f103RCT6_VS.elf: warning: allocated section `ER_RO' not in segment
