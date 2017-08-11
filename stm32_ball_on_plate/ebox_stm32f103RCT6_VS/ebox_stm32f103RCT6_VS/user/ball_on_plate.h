@@ -416,92 +416,130 @@ public:
 	{
 		pathPointIndex[0] = src;
 		
-		int srcX = src % 3,srcY=src/3;
-		int dstX = dst % 3, dstY = dst / 3;
-		int disX = abs(srcX - dstX), disY = abs(srcY - dstY);
+		//起点终点均为9点
+		if (src < 9 && dst < 9)
+		{
+			int srcX = src % 3, srcY = src / 3;
+			int dstX = dst % 3, dstY = dst / 3;
+			int disX = abs(srcX - dstX), disY = abs(srcY - dstY);
 
-		//如果src和dst相邻（包括对角线）或相同
-		if (disX <= 1 && disY <= 1)
-		{
-			pathPointIndex[1] = dst;
-			pathLength = 2;
-		}
-		//如果两个方向距离为2
-		else if (disX == 2 && disY == 2)
-		{
-			//如果从0开始
-			if (src == 0)
+			//如果src和dst相邻（包括对角线）或相同
+			if (disX <= 1 && disY <= 1)
 			{
-				pathPointIndex[1] = 9; 
-				pathPointIndex[2] = 11; 
-				pathPointIndex[3] = 12;
+				pathPointIndex[1] = dst;
+				pathLength = 2;
 			}
-			//如果从6开始
-			else if (src == 6)
+			//如果两个方向距离为2
+			else if (disX == 2 && disY == 2)
 			{
-				pathPointIndex[1] = 11;
-				pathPointIndex[2] = 12;
-				pathPointIndex[3] = 10;
-			}
-			//如果从8开始
-			else if (src == 8)
-			{
-				pathPointIndex[1] = 12;
-				pathPointIndex[2] = 10;
-				pathPointIndex[3] = 9;
-			}
-			//如果从2开始
-			else if (src == 2)
-			{
-				pathPointIndex[1] = 10;
-				pathPointIndex[2] = 9;
-				pathPointIndex[3] = 11;
-			}
-			pathPointIndex[4] = dst;
-			pathLength = 5;
-		}
-		//如果只有一个方向距离为2
-		else
-		{
-			//如果路径方向水平
-			if (disY <= 1)
-			{
-				int safeY = (srcY + dstY) / 2;
-				limit(safeY, 0, 1);
-				//如果起点在左
-				if (srcX < dstX)
+				//如果从0开始
+				if (src == 0)
 				{
-					pathPointIndex[1] = 9 + safeY * 2;
-					pathPointIndex[2] = 9 + safeY * 2 + 1;
+					pathPointIndex[1] = 9;
+					pathPointIndex[2] = 11;
+					pathPointIndex[3] = 12;
 				}
-				//如果起点在右
-				else
+				//如果从6开始
+				else if (src == 6)
 				{
-					pathPointIndex[1] = 9 + safeY * 2 + 1;
-					pathPointIndex[2] = 9 + safeY * 2;
+					pathPointIndex[1] = 11;
+					pathPointIndex[2] = 12;
+					pathPointIndex[3] = 10;
 				}
+				//如果从8开始
+				else if (src == 8)
+				{
+					pathPointIndex[1] = 12;
+					pathPointIndex[2] = 10;
+					pathPointIndex[3] = 9;
+				}
+				//如果从2开始
+				else if (src == 2)
+				{
+					pathPointIndex[1] = 10;
+					pathPointIndex[2] = 9;
+					pathPointIndex[3] = 11;
+				}
+				pathPointIndex[4] = dst;
+				pathLength = 5;
 			}
-			//如果路径方向竖直
+			//如果只有一个方向距离为2
 			else
 			{
-				int safeX = (srcX + dstX) / 2;
-				limit(safeX, 0, 1);
-				//如果起点在上
-				if (srcY < dstY)
+				//如果路径方向水平
+				if (disY <= 1)
 				{
-					pathPointIndex[1] = 9 + safeX;
-					pathPointIndex[2] = 9 + safeX + 2;
+					int safeY = (srcY + dstY) / 2;
+					limit(safeY, 0, 1);
+					//如果起点在左
+					if (srcX < dstX)
+					{
+						pathPointIndex[1] = 9 + safeY * 2;
+						pathPointIndex[2] = 9 + safeY * 2 + 1;
+					}
+					//如果起点在右
+					else
+					{
+						pathPointIndex[1] = 9 + safeY * 2 + 1;
+						pathPointIndex[2] = 9 + safeY * 2;
+					}
 				}
-				//如果起点在下
+				//如果路径方向竖直
 				else
 				{
-					pathPointIndex[1] = 9 + safeX + 2;
-					pathPointIndex[2] = 9 + safeX;
+					int safeX = (srcX + dstX) / 2;
+					limit(safeX, 0, 1);
+					//如果起点在上
+					if (srcY < dstY)
+					{
+						pathPointIndex[1] = 9 + safeX;
+						pathPointIndex[2] = 9 + safeX + 2;
+					}
+					//如果起点在下
+					else
+					{
+						pathPointIndex[1] = 9 + safeX + 2;
+						pathPointIndex[2] = 9 + safeX;
+					}
 				}
+				pathPointIndex[3] = dst;
+				pathLength = 4;
 			}
-			pathPointIndex[3] = dst;
-			pathLength = 4;
 		}
+		//起点终点均为4点
+		else if (src >= 9 && dst >= 9)
+		{
+			src -= 9; dst -= 9;
+			int srcX = src % 2, srcY = src / 2;
+			int dstX = dst % 2, dstY = dst / 2;
+			int disX = abs(srcX - dstX), disY = abs(srcY - dstY);
+
+			if (disX == 1 && disY == 1)
+			{
+				if (src == 0)
+				{
+					pathPointIndex[1] = 11;
+				}
+				else if (src == 1)
+				{
+					pathPointIndex[1] = 12;
+				}
+				else if (src == 2)
+				{
+					pathPointIndex[1] = 10;
+				}
+				else if (src == 3)
+				{
+					pathPointIndex[1] = 9;
+				}
+				pathPointIndex[2] = 9 + dst;
+			}
+			else
+			{
+				pathPointIndex[1] = 9 + dst;
+			}
+		}
+		
 	}
 
 
