@@ -23,7 +23,7 @@ using namespace std;
 
 //#define STDIO_DEBUG
 //#define SOCKET_SEND_IMAGE
-//#define FINAL_RELEASE
+#define FINAL_RELEASE
 
 
 int main(int argc, char **argv)

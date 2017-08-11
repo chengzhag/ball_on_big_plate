@@ -35,7 +35,7 @@ public:
 		PIDFeforGshifIntIncDiff(kp, ki, kd, interval, stopFrq),
 		PIDDeadzone(kp, ki, kd, interval, deadzone),
 		vLim(vLim),
-		filterFor(1/interval,1)
+		filterFor(1 / interval, 1)
 	{
 
 	}
@@ -70,7 +70,7 @@ public:
 				float ek = (err + errOld) / 2;
 				integral += ki*fek(ek)*ek;
 			}
-			if (err>gearshiftPointL+ gearshiftPointH)
+			if (err > gearshiftPointL + gearshiftPointH)
 			{
 				integral = 0;
 			}
@@ -175,7 +175,7 @@ public:
 	BallOnPlateBase() :
 		//定位
 		uartNum(&uart2),
-		posX(0.0/0.0), posY(0.0/0.0),
+		posX(0.0 / 0.0), posY(0.0 / 0.0),
 		isBallOnPlate(true),
 		lastPosReceiveTime(0),
 		//前馈系统
@@ -341,7 +341,7 @@ public:
 	{
 		return isBallOnPlate;
 	}
-	
+
 	//树莓派是否在发送信息
 	bool getIsPosReceiving()
 	{
@@ -388,9 +388,9 @@ const float BallOnPlateBase::maxPos = 600;
 const float BallOnPlateBase::ratePID = 32;
 const float BallOnPlateBase::intervalPID = 1 / ratePID;
 //前馈系统
-const float BallOnPlateBase::gzDenominator = 
+const float BallOnPlateBase::gzDenominator =
 0.6125* intervalPID *intervalPID / (4 / 3 * M_PI / 200);//除以一个舵机百分比到舵机弧度的单位系数
-const float BallOnPlateBase::feedforwardSysH[3] = 
+const float BallOnPlateBase::feedforwardSysH[3] =
 { 1 / gzDenominator,-2 / gzDenominator,1 / gzDenominator };
 //pid参数
 const float BallOnPlateBase::factorPID = 3.2;
@@ -404,7 +404,7 @@ protected:
 public:
 	int pathPointIndex[128];//存储路径的下标
 
-	BallOnPlatePathIndex() 
+	BallOnPlatePathIndex()
 	{
 	}
 
@@ -415,154 +415,94 @@ public:
 	void computePathPoint(int src, int dst)
 	{
 		pathPointIndex[0] = src;
-		
-		//起点终点均为9点
-		if (src < 9 && dst < 9)
-		{
-			int srcX = src % 3, srcY = src / 3;
-			int dstX = dst % 3, dstY = dst / 3;
-			int disX = abs(srcX - dstX), disY = abs(srcY - dstY);
 
-			//如果src和dst相邻（包括对角线）或相同
-			if (disX <= 1 && disY <= 1)
-			{
-				pathPointIndex[1] = dst;
-				pathLength = 2;
-			}
-			//如果两个方向距离为2
-			else if (disX == 2 && disY == 2)
-			{
-				//如果从0开始
-				if (src == 0)
-				{
-					pathPointIndex[1] = 9;
-					pathPointIndex[2] = 11;
-					pathPointIndex[3] = 12;
-				}
-				//如果从6开始
-				else if (src == 6)
-				{
-					pathPointIndex[1] = 11;
-					pathPointIndex[2] = 12;
-					pathPointIndex[3] = 10;
-				}
-				//如果从8开始
-				else if (src == 8)
-				{
-					pathPointIndex[1] = 12;
-					pathPointIndex[2] = 10;
-					pathPointIndex[3] = 9;
-				}
-				//如果从2开始
-				else if (src == 2)
-				{
-					pathPointIndex[1] = 10;
-					pathPointIndex[2] = 9;
-					pathPointIndex[3] = 11;
-				}
-				pathPointIndex[4] = dst;
-				pathLength = 5;
-			}
-			//如果只有一个方向距离为2
-			else
-			{
-				//如果路径方向水平
-				if (disY <= 1)
-				{
-					int safeY = (srcY + dstY) / 2;
-					limit(safeY, 0, 1);
-					//如果起点在左
-					if (srcX < dstX)
-					{
-						pathPointIndex[1] = 9 + safeY * 2;
-						pathPointIndex[2] = 9 + safeY * 2 + 1;
-					}
-					//如果起点在右
-					else
-					{
-						pathPointIndex[1] = 9 + safeY * 2 + 1;
-						pathPointIndex[2] = 9 + safeY * 2;
-					}
-				}
-				//如果路径方向竖直
-				else
-				{
-					int safeX = (srcX + dstX) / 2;
-					limit(safeX, 0, 1);
-					//如果起点在上
-					if (srcY < dstY)
-					{
-						pathPointIndex[1] = 9 + safeX;
-						pathPointIndex[2] = 9 + safeX + 2;
-					}
-					//如果起点在下
-					else
-					{
-						pathPointIndex[1] = 9 + safeX + 2;
-						pathPointIndex[2] = 9 + safeX;
-					}
-				}
-				pathPointIndex[3] = dst;
-				pathLength = 4;
-			}
-		}
-		//起点终点均为4点
-		else if (src >= 9 && dst >= 9)
-		{
-			src -= 9; dst -= 9;
-			int srcX = src % 2, srcY = src / 2;
-			int dstX = dst % 2, dstY = dst / 2;
-			int disX = abs(srcX - dstX), disY = abs(srcY - dstY);
+		int srcX = src % 3, srcY = src / 3;
+		int dstX = dst % 3, dstY = dst / 3;
+		int disX = abs(srcX - dstX), disY = abs(srcY - dstY);
 
-			if (disX == 1 && disY == 1)
-			{
-				if (src == 0)
-				{
-					pathPointIndex[1] = 11;
-				}
-				else if (src == 1)
-				{
-					pathPointIndex[1] = 9;
-				}
-				else if (src == 2)
-				{
-					pathPointIndex[1] = 12;
-				}
-				else if (src == 3)
-				{
-					pathPointIndex[1] = 10;
-				}
-				pathPointIndex[2] = 9 + dst;
-				pathLength = 3;
-			}
-			else
-			{
-				pathPointIndex[1] = 9 + dst;
-				pathLength = 2;
-			}
+		//如果src和dst相邻（包括对角线）或相同
+		if (disX <= 1 && disY <= 1)
+		{
+			pathPointIndex[1] = dst;
+			pathLength = 2;
 		}
-		//起点终点两者都有
+		//如果两个方向距离为2
+		else if (disX == 2 && disY == 2)
+		{
+			//如果从0开始
+			if (src == 0)
+			{
+				pathPointIndex[1] = 9;
+				pathPointIndex[2] = 11;
+				pathPointIndex[3] = 12;
+			}
+			//如果从6开始
+			else if (src == 6)
+			{
+				pathPointIndex[1] = 11;
+				pathPointIndex[2] = 12;
+				pathPointIndex[3] = 10;
+			}
+			//如果从8开始
+			else if (src == 8)
+			{
+				pathPointIndex[1] = 12;
+				pathPointIndex[2] = 10;
+				pathPointIndex[3] = 9;
+			}
+			//如果从2开始
+			else if (src == 2)
+			{
+				pathPointIndex[1] = 10;
+				pathPointIndex[2] = 9;
+				pathPointIndex[3] = 11;
+			}
+			pathPointIndex[4] = dst;
+			pathLength = 5;
+		}
+		//如果只有一个方向距离为2
 		else
 		{
-			//转换坐标
-			int srcX, srcY;
-			int dstX, dstY;
-			if (src >= 9)
+			//如果路径方向水平
+			if (disY <= 1)
 			{
-				src -= 9;
-				srcX = src % 2, srcY = src / 2;
-				dstX = dst % 3, dstY = dst / 3;
+				int safeY = (srcY + dstY) / 2;
+				limit(safeY, 0, 1);
+				//如果起点在左
+				if (srcX < dstX)
+				{
+					pathPointIndex[1] = 9 + safeY * 2;
+					pathPointIndex[2] = 9 + safeY * 2 + 1;
+				}
+				//如果起点在右
+				else
+				{
+					pathPointIndex[1] = 9 + safeY * 2 + 1;
+					pathPointIndex[2] = 9 + safeY * 2;
+				}
 			}
-			if (dst >= 9)
+			//如果路径方向竖直
+			else
 			{
-				dst -= 9;
-				srcX = src % 3, srcY = src / 3;
-				dstX = dst % 2, dstY = dst / 2;
+				int safeX = (srcX + dstX) / 2;
+				limit(safeX, 0, 1);
+				//如果起点在上
+				if (srcY < dstY)
+				{
+					pathPointIndex[1] = 9 + safeX;
+					pathPointIndex[2] = 9 + safeX + 2;
+				}
+				//如果起点在下
+				else
+				{
+					pathPointIndex[1] = 9 + safeX + 2;
+					pathPointIndex[2] = 9 + safeX;
+				}
 			}
-			//相邻
-
+			pathPointIndex[3] = dst;
+			pathLength = 4;
 		}
-		
+
 	}
 
 
@@ -616,7 +556,7 @@ protected:
 	int stepAll, stepNow;
 
 public:
-	SpeedControl(float interval):
+	SpeedControl(float interval) :
 		interval(interval),
 		stepAll(0),
 		stepNow(0)
@@ -642,7 +582,7 @@ public:
 	//返回true表示完成路径
 	virtual bool getNext(float *next)
 	{
-		bool isEnd=false;
+		bool isEnd = false;
 		stepNow += 1;
 		if (stepNow > stepAll)
 		{
@@ -664,14 +604,14 @@ public:
 		{
 			return true;
 		}
-		else 
+		else
 		{
 			return false;
 		}
 	}
 };
 
-class SpeedControlSoft:public SpeedControl
+class SpeedControlSoft :public SpeedControl
 {
 protected:
 	RcFilter filter;
@@ -682,7 +622,7 @@ public:
 	{
 
 	}
-	
+
 	//设置路径的终点起点和时间
 	virtual void setPathTime(float x, float y, float time)
 	{
@@ -825,7 +765,7 @@ public:
 		{
 			return true;
 		}
-		else 
+		else
 		{
 			return false;
 		}
@@ -844,7 +784,7 @@ protected:
 public:
 	BallOnPlatePathSoft(float interval, float stopFre = 0.5) :
 		BallOnPlatePath(interval),
-		filterX(1/ interval, stopFre), filterY(1 / interval, stopFre)
+		filterX(1 / interval, stopFre), filterY(1 / interval, stopFre)
 	{
 
 	}
@@ -860,7 +800,7 @@ public:
 	virtual void setPathSpeed(int src, int dst, float speed)
 	{
 		BallOnPlatePath::setPathTime(src, dst, speed);
-		
+
 		//获取起点实际坐标值
 		float srcX, srcY;
 		srcX = circleX[src]; srcY = circleY[src];
@@ -894,7 +834,7 @@ const float BallOnPlatePath::circleY[9] = {
 };
 
 
-class BallOnPlate:public BallOnPlateBase
+class BallOnPlate :public BallOnPlateBase
 {
 protected:
 	BallOnPlatePath path;
@@ -928,8 +868,8 @@ public:
 	//球是否进入目标圆
 	bool isBallInCircle(int index)
 	{
-		if (abs(path.circleX[index]-getPosX())<10
-			&& abs(path.circleY[index] - getPosY())<10)
+		if (abs(path.circleX[index] - getPosX()) < 10
+			&& abs(path.circleY[index] - getPosY()) < 10)
 		{
 			return true;
 		}
