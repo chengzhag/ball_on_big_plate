@@ -390,6 +390,152 @@ const float BallOnPlateBase::feedforwardSysH[3] =
 const float BallOnPlateBase::factorPID = 3.7;
 
 
+class BallOnPlatePath
+{
+protected:
+	static const float circleX[9], circleY[9];//9个圆的坐标
+	float safeX[4], safeY[4];//4个安全圆的坐标
+	int pathPointIndex[128];//存储路径的下标
+	int pathLength;//路径的长度
+public:
+	BallOnPlatePath() 
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			int leftTopIndex = i / 2 * 3 + i % 2;
+			int rightTopIndex = leftTopIndex + 1;
+			int leftBotomIndex = leftTopIndex + 3;
+			int rightBotomIndex = leftTopIndex + 4;
+			safeX[i] = (circleX[leftTopIndex] + circleX[rightTopIndex]
+				+ circleX[leftBotomIndex] + circleX[rightBotomIndex]) / 4;
+			safeY[i] = (circleY[leftTopIndex] + circleY[rightTopIndex]
+				+ circleY[leftBotomIndex] + circleY[rightBotomIndex]) / 4;
+		}
+	}
+
+	//获取从src到dst圆所经过的路径
+	//pathPointIndex数组指针指向路径的编号
+	//0~8代表1~9号圆，9~12代表1~4号安全区域
+	//pathLength代表路径的长度
+	void computePathPoint(int src, int dst)
+	{
+		pathPointIndex[0] = src;
+		
+		int srcX = src % 3,srcY=src/3;
+		int dstX = dst % 3, dstY = dst / 3;
+		int disX = abs(srcX - dstX), disY = abs(srcY - dstY);
+
+		//如果src和dst相邻（包括对角线）或相同
+		if (disX <= 1 && disY <= 1)
+		{
+			pathPointIndex[1] = dst;
+			pathLength = 2;
+		}
+		//如果两个方向距离为2
+		else if (disX == 2 && disY == 2)
+		{
+			//如果从0开始
+			if (src == 0)
+			{
+				pathPointIndex[1] = 9; 
+				pathPointIndex[2] = 11; 
+				pathPointIndex[3] = 12;
+			}
+			//如果从6开始
+			else if (src == 6)
+			{
+				pathPointIndex[1] = 11;
+				pathPointIndex[2] = 12;
+				pathPointIndex[3] = 10;
+			}
+			//如果从8开始
+			else if (src == 8)
+			{
+				pathPointIndex[1] = 12;
+				pathPointIndex[2] = 10;
+				pathPointIndex[3] = 9;
+			}
+			//如果从2开始
+			else if (src == 2)
+			{
+				pathPointIndex[1] = 10;
+				pathPointIndex[2] = 9;
+				pathPointIndex[3] = 11;
+			}
+			pathPointIndex[4] = dst;
+			pathLength = 5;
+		}
+		//如果只有一个方向距离为2
+		else
+		{
+			//如果路径方向水平
+			if (disY <= 1)
+			{
+				int safeY = (srcY + dstY) / 2;
+				limit(safeY, 0, 1);
+				//如果起点在左
+				if (srcX < dstX)
+				{
+					pathPointIndex[1] = 9 + safeY * 2;
+					pathPointIndex[2] = 9 + safeY * 2 + 1;
+				}
+				//如果起点在右
+				else
+				{
+					pathPointIndex[1] = 9 + safeY * 2 + 1;
+					pathPointIndex[2] = 9 + safeY * 2;
+				}
+			}
+			//如果路径方向竖直
+			else
+			{
+				int safeX = (srcX + dstX) / 2;
+				limit(safeX, 0, 1);
+				//如果起点在上
+				if (srcY < dstY)
+				{
+					pathPointIndex[1] = 9 + safeX;
+					pathPointIndex[2] = 9 + safeX + 2;
+				}
+				//如果起点在下
+				else
+				{
+					pathPointIndex[1] = 9 + safeX + 2;
+					pathPointIndex[2] = 9 + safeX;
+				}
+			}
+			pathPointIndex[3] = dst;
+			pathLength = 4;
+		}
+	}
+
+	//获取路径指针
+	int* getPathPointIndex()
+	{
+		return pathPointIndex;
+	}
+
+	//获取路径长度
+	int getPathLength()
+	{
+		return pathLength;
+	}
+	
+
+};
+
+const float BallOnPlatePath::circleX[9] = {
+	94.8847,298.129,498.131,
+	93.1718,299.301,507.667,
+	97.8807,300.759,504.591
+};
+const float BallOnPlatePath::circleY[9] = {
+	106.717,98.0838,98.9344,
+	303.629,301.297,298.753,
+	504.300,505.724,495.129
+};
+
+
 //路径生成类
 //生成规定时间内从x到y的匀速路径
 class SpeedControl

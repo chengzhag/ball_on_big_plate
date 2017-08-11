@@ -21,8 +21,8 @@
 using namespace cv;
 using namespace std;
 
-//#define STDIO_DEBUG
-//#define SOCKET_SEND_IMAGE
+#define STDIO_DEBUG
+#define SOCKET_SEND_IMAGE
 //#define FINAL_RELEASE
 
 
