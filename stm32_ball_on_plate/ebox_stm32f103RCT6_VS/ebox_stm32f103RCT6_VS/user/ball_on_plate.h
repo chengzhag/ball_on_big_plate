@@ -91,6 +91,7 @@ public:
 //基本参数用静态常量
 class BallOnPlateBase
 {
+protected:
 	//定位
 	UartNum<float, 2> uartNum;
 	static const float maxPos;
@@ -119,8 +120,9 @@ class BallOnPlateBase
 	//照明
 	WS2812 ws2812;
 
+protected:
 	//收到定位坐标立即进行PID运算
-	void posReceiveEvent(UartNum<float, 2>* uartNum)
+	virtual void posReceiveEvent(UartNum<float, 2>* uartNum)
 	{
 		lastPosReceiveTime = millis();
 
@@ -170,7 +172,7 @@ public:
 	BallOnPlateBase() :
 		//定位
 		uartNum(&uart2),
-		posX(-1), posY(-1),
+		posX(0.0/0.0), posY(0.0/0.0),
 		isBallOnPlate(true),
 		lastPosReceiveTime(0),
 		//前馈系统
@@ -188,7 +190,7 @@ public:
 	}
 
 	//初始化PID、动力、定位、照明
-	void begin()
+	virtual void begin()
 	{
 		//PID
 		fpsPID.begin();
@@ -715,7 +717,6 @@ public:
 		}
 	}
 
-
 	//设置路径的起点终点和速度
 	virtual void setPathTime(int src, int dst, float speed)
 	{
@@ -739,8 +740,19 @@ public:
 		generatorY.getNext(y);
 	}
 
+	bool isEnd()
+	{
+		if (pathIndex >= getPathLength() - 1)
+		{
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
 };
-class BallOnPlatePathSoft :private BallOnPlatePath
+class BallOnPlatePathSoft :public BallOnPlatePath
 {
 protected:
 	RcFilter filterX, filterY;
@@ -760,7 +772,7 @@ public:
 	}
 
 	//设置路径的起点终点和速度
-	virtual void setPathTime(int src, int dst, float speed)
+	virtual void setPathSpeed(int src, int dst, float speed)
 	{
 		BallOnPlatePath::setPathTime(src, dst, speed);
 		
@@ -806,4 +818,43 @@ const float BallOnPlatePath::circleY[9] = {
 	106.717,98.0838,98.9344,
 	303.629,301.297,298.753,
 	504.300,505.724,495.129
+};
+
+
+class BallOnPlate:public BallOnPlateBase
+{
+protected:
+	BallOnPlatePath path;
+public:
+	BallOnPlate() :
+		path(getIntervalPID())
+	{
+
+	}
+
+
+	//设置路径
+	void startPath(int src, int dst, float speed)
+	{
+		path.setPathTime(src, dst, speed);
+	}
+
+	//刷新路径
+	bool refreshPath()
+	{
+		float x, y;
+		bool isEnd = path.getNext(&x, &y);
+		setTarget(x, y);
+		return isEnd;
+	}
+
+	//PID中断函数，添加路径刷新对目标点的设置
+	virtual void posReceiveEvent(UartNum<float, 2>* uartNum)
+	{
+		if (!path.isEnd())
+		{
+			refreshPath();
+		}
+		BallOnPlateBase::posReceiveEvent(uartNum);
+	}
 };

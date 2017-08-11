@@ -20,8 +20,7 @@
 
 using namespace std;
 
-BallOnPlateBase ballOnplate;
-BallOnPlatePathSoft path(0.1, 0.5);
+BallOnPlate ballOnplate;
 
 //调试
 UartVscan uartVscan(&uart1);
@@ -162,14 +161,6 @@ void uiRefresh(void *pvParameters)
 		fpsUItemp = fpsUI.getFps();
 		oled.printf(0, 4, 2, "%-8.0f%-8.0f", fpsPIDtemp, fpsUItemp);
 
-		//测试路径生成
-		float point[3];
-		if (path.getNext(point, point + 1))
-		{
-			point[2] = 100;
-		}
-		uartVscan.sendOscilloscope(point, 3);
-
 
 		vTaskDelayUntil(&xLastWakeTime, uiRefreshDelay);
 	}
@@ -196,8 +187,6 @@ void setup()
 	//调试
 	uart1.begin(115200);
 	fpsUI.begin();
-
-	path.setPathTime(2, 6, 200);
 
 
 	//交互
