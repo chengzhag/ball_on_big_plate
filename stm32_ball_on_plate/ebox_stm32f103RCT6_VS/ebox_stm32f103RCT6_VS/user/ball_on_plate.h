@@ -182,10 +182,10 @@ public:
 		feedforwardSysX((float*)feedforwardSysH, 3), feedforwardSysY((float*)feedforwardSysH, 3),
 		targetXFiltered(maxPos / 2), targetYFiltered(maxPos / 2), targetXraw(targetXFiltered), targetYraw(targetYFiltered),
 		//pid参数
-		pidX(0.25f*factorPID, 0.f*factorPID, 0.16f*factorPID, 1.f / ratePID, 5),//I=0.5, deadzone=6, vLim=2
-		pidY(0.25f*factorPID, 0.f*factorPID, 0.16f*factorPID, 1.f / ratePID, 5),
-		filterOutX(ratePID, 15), filterOutY(ratePID, 15), filterTargetX(ratePID, 0.3), filterTargetY(ratePID, 0.3),
-		servoX(&PB9, 200, 0.75, 2.05), servoY(&PB8, 200, 0.85, 2.15),
+		pidX(0.22f*factorPID, 0.f*factorPID, 0.13f*factorPID, 1.f / ratePID, 5),//I=0.5, deadzone=6, vLim=2
+		pidY(0.22f*factorPID, 0.f*factorPID, 0.13f*factorPID, 1.f / ratePID, 5),
+		filterOutX(ratePID, 15), filterOutY(ratePID, 15), filterTargetX(ratePID, 0.5), filterTargetY(ratePID, 0.5),
+		servoX(&PB9, 200, 0.85, 1.95), servoY(&PB8, 200, 0.95, 2.05),
 		//照明
 		ws2812(&PB0)
 	{
@@ -393,7 +393,7 @@ const float BallOnPlateBase::gzDenominator =
 const float BallOnPlateBase::feedforwardSysH[3] = 
 { 1 / gzDenominator,-2 / gzDenominator,1 / gzDenominator };
 //pid参数
-const float BallOnPlateBase::factorPID = 3.7;
+const float BallOnPlateBase::factorPID = 3.2;
 
 
 //路径点下标生成
@@ -764,14 +764,15 @@ public:
 		{
 			return true;
 		}
-		else {
+		else 
+		{
 			return false;
 		}
 	}
 
 	void stop()
 	{
-		pathIndex = pathLength - 1;
+		pathIndex = getPathLength() - 1;
 	}
 
 };
@@ -841,7 +842,7 @@ protected:
 	//PID中断函数，添加路径刷新对目标点的设置
 	virtual void posReceiveEvent(UartNum<float, 2>* uartNum)
 	{
-		if (!path.isEnd() && getIsBallOn())
+		if (getIsBallOn())
 		{
 			refreshPath();
 		}
@@ -856,12 +857,12 @@ public:
 
 	}
 
-	//设置目标圆，直线逼近
-	void setTargetCircle(int index)
-	{
-		targetCircle = index;
-		setTarget(path.circleX[index], path.circleY[index]);
-	}
+	////设置目标圆，直线逼近
+	//void setTargetCircle(int index)
+	//{
+	//	targetCircle = index;
+	//	setTarget(path.circleX[index], path.circleY[index]);
+	//}
 
 	//球是否进入目标圆
 	bool isBallInCircle(int index)

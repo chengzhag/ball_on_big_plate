@@ -21,8 +21,8 @@
 using namespace cv;
 using namespace std;
 
-#define STDIO_DEBUG
-#define SOCKET_SEND_IMAGE
+//#define STDIO_DEBUG
+//#define SOCKET_SEND_IMAGE
 //#define FINAL_RELEASE
 
 
@@ -90,9 +90,9 @@ int main(int argc, char **argv)
 	//平板小球尺寸信息
 	const float maxX = 600, maxY = 600;
 	const float camHeight = 430;
-	const float ballArea = 26;
+	const float ballArea = 28;
 	const float ballAreaLow = ballArea * 0.2;
-	const float ballAreaHigh = ballArea * 2;
+	const float ballAreaHigh = ballArea * 1.5;
 	
 	
 #ifdef SOCKET_SEND_IMAGE

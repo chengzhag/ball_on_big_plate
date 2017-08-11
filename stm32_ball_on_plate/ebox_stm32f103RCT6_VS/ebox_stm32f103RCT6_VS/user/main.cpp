@@ -20,7 +20,7 @@
 
 using namespace std;
 
-BallOnPlate ballOnplate;
+BallOnPlate ballOnPlate;
 
 //调试
 UartVscan uartVscan(&uart1);
@@ -43,14 +43,13 @@ OLEDI2C oled(&i2c1);
 //按键交互
 int numIndex = 0;
 int task = 0;
-bool inProgress = false;
-bool isReady=false;
-bool isEnd = true;
-TicToc taskTimer;
+TicToc timerTask,timerUI;
+int stage = 0;//任务的状态，0代表停止，1代表准备完毕
 
-float circleR = 0;
-float theta = 0;
-const float rateCircle = 0.2;
+//路径参数
+int abcd[4] = { 0 };
+const float speedTask6=150;
+
 void posReceiveEvent()
 {
 	//按键响应
@@ -91,100 +90,253 @@ void posReceiveEvent()
 	}
 	if (keyR.pressed_for(5000, 1))
 	{
-		ballOnplate.shutdownRasp();
+		ballOnPlate.shutdownRasp();
 	}
 
-	//float targetXraw = ballOnplate.getTargetXRaw();
-	//float targetYraw = ballOnplate.getTargetYRaw();
+
 	switch (numIndex)
 	{
 	case 0:
+		stage = 0;//停止进行中的任务
 		task += increase;
 		limit(task, 0, 7);
-		if (increase != 0)
-		{
-			inProgress = false;
-			isReady = false;
-		}
 		break;
 	case 1:
 		//选择键按下
-		if (increase != 0 && inProgress == false)
+		if (increase != 0)
 		{
-			inProgress = true;
 			//开始任务
 			switch (task)
 			{
-			case 0:
-				ballOnplate.setTargetCircle(4);
+			case 0://任务0，归中
+				if (isnan(ballOnPlate.getPosX()))//防止准备时速度太快冲出平板
+				{
+					ballOnPlate.startPath(4, 4, 100);
+				}
+				else
+				{
+					ballOnPlate.startPath(4, 100);
+				}
+				stage = 1;
 				break;
-			case 1:
-				ballOnplate.setTargetCircle(1);
+			case 1://任务1，2稳定5
+				if (isnan(ballOnPlate.getPosX()))
+				{
+					ballOnPlate.startPath(1, 1, 100);
+				}
+				else
+				{
+					ballOnPlate.startPath(1, 100);
+				}
+				stage = 1;
 				break;
-			case 2:
-				ballOnplate.startPath(0, 4, 100);
+			case 2://任务2，1~5停留2<15
+				if (stage == 0)
+				{
+					if (isnan(ballOnPlate.getPosX()))
+					{
+						ballOnPlate.startPath(0, 0, 100);
+					}
+					else
+					{
+						ballOnPlate.startPath(0, 100);
+					}
+					stage = 1;
+				}
+				else if (stage == 1)
+				{
+					timerUI.tic();
+					ballOnPlate.startPath(0, 4, 100);
+					stage = 2;
+				}
+				break;
+			case 3://任务3，1~4停留2~5停留2<20
+				if (stage == 0)
+				{
+					if (isnan(ballOnPlate.getPosX()))
+					{
+						ballOnPlate.startPath(0, 0, 100);
+					}
+					else
+					{
+						ballOnPlate.startPath(0, 100);
+					}
+					stage = 1;
+				}
+				else if (stage == 1)
+				{
+					timerUI.tic();
+					ballOnPlate.startPath(0, 3, 100);
+					timerTask.tic();
+					stage = 2;
+				}
+				break;
+			case 4://任务4，1~9停留2<30
+				if (stage == 0)
+				{
+					if (isnan(ballOnPlate.getPosX()))
+					{
+						ballOnPlate.startPath(0, 0, 100);
+					}
+					else
+					{
+						ballOnPlate.startPath(0, 100);
+					}
+					stage = 1;
+				}
+				else if (stage == 1)
+				{
+					timerUI.tic();
+					ballOnPlate.startPath(0, 8, 100);
+					stage = 2;
+				}
+				
+				break;
+			case 5://任务5，1~2~6~9停留2<40
+				if (stage == 0)
+				{
+					if (isnan(ballOnPlate.getPosX()))
+					{
+						ballOnPlate.startPath(0, 0, 100);
+					}
+					else
+					{
+						ballOnPlate.startPath(0, 100);
+					}
+					stage = 1;
+				}
+				else if (stage == 1)
+				{
+					timerUI.tic();
+					ballOnPlate.startPath(0, 1, 100);
+					timerTask.tic();
+					stage = 2;
+				}
+				break;
+			case 6://任务6，手动输入先后经过ABCD
+				if (stage == 0)
+				{
+					if (isnan(ballOnPlate.getPosX()))
+					{
+						ballOnPlate.startPath(abcd[0], abcd[0], speedTask6);
+					}
+					else
+					{
+						ballOnPlate.startPath(abcd[0], speedTask6);
+					}
+					
+					stage = 1;
+				}
+				else if (stage == 1)
+				{
+					timerUI.tic();
+					ballOnPlate.startPath(abcd[0], abcd[1], speedTask6);
+					timerTask.tic();
+					stage = 2;
+				}
+				break;
+			case 7://任务7，
+
 				break;
 			default:
 				break;
 			}
 		}
-		else if (increase != 0 && inProgress == true)
-		{
-			ballOnplate.stopPath();
-			inProgress = false;
-			isReady = false;
-		}
-	//case 1:
-	//	targetYraw += increase;
-	//	limit<float>(targetYraw, 30, ballOnplate.getPosMax() - 30);
-	//	break;
-	//case 2:
-	//	circleR = circleR + increase;
-	//	limit<float>(circleR, 0, (ballOnplate.getPosMax() - 100) / 2);
-	//	theta += 2 * PI *ballOnplate.getIntervalPID() * rateCircle;//0.5圈一秒
-	//	targetXraw = ballOnplate.getPosMax() / 2 + circleR*sin(theta);
-	//	targetYraw = ballOnplate.getPosMax() / 2 + circleR*cos(theta);
-	//	break;
+		break;
+	case 2://A
+		stage = 0;
+		abcd[0] += increase;
+		limit(abcd[0], 0, 8);
+		break;
+	case 3://B
+		stage = 0;
+		abcd[1] += increase;
+		limit(abcd[1], 0, 8);
+		break;
+	case 4://C
+		stage = 0;
+		abcd[2] += increase;
+		limit(abcd[2], 0, 8);
+		break;
+	case 5://D
+		stage = 0;
+		abcd[3] += increase;
+		limit(abcd[3], 0, 8);
+		break;
 	default:
 		break;
 	}
 
-	//任务进行
 	switch (task)
 	{
-	case 2:
-		//if (isReady == false)
-		//{
-		//	if (ballOnplate.isBallInCircle(0))
-		//	{
-		//		isReady = true;
-		//		isEnd = false;
-		//		taskTimer.tic();
-		//	}
-		//}
-		//if (isReady == true && taskTimer.toc() > 2 && isEnd == false)
-		//{
-		//	isEnd = true;
-		//	ballOnplate.startPath(0, 4, 50);
-		//}
+	case 1:
+		if (stage == 1 && !isnan(ballOnPlate.getPosX()))
+		{
+			timerUI.tic();
+			stage = 2;
+		}
+		else if (stage == 2 && isnan(ballOnPlate.getPosX()))
+		{
+			stage = 1;
+		}
+		break;
+	case 3:
+		if (timerTask.toc() > 5000 && stage == 2)
+		{
+			ballOnPlate.startPath(3, 4, 100);
+			stage = 3;
+		}
+		break;
+	case 5:
+		if (timerTask.toc() > 3000 && stage == 2)
+		{
+			ballOnPlate.startPath(1, 5, 100);
+			stage = 3;
+			timerTask.tic();
+		}
+		else if (timerTask.toc() > 4000 && stage == 3)
+		{
+			ballOnPlate.startPath(5, 8, 100);
+			stage = 4;
+		}
+		break;
+	case 6:
+		if (timerTask.toc() > 5000 && stage == 2)
+		{
+			ballOnPlate.startPath(abcd[1], abcd[2], speedTask6);
+			stage = 3;
+			timerTask.tic();
+		}
+		else if (timerTask.toc() > 5000 && stage == 3)
+		{
+			ballOnPlate.startPath(abcd[2], abcd[3], speedTask6);
+			stage = 4;
+		}
+		break;
 	default:
 		break;
 	}
 
-	//ballOnplate.setTarget(targetXraw, targetYraw);
 	
 	float vscan[] = {
-		ballOnplate.getPosX(),ballOnplate.getPosY()
-		,ballOnplate.getOutX(),ballOnplate.getOutY()
-		,ballOnplate.getTargetXRaw(),ballOnplate.getTargetYRaw()
+		ballOnPlate.getPosX(),ballOnPlate.getPosY()
+		,ballOnPlate.getOutX(),ballOnPlate.getOutY()
+		,ballOnPlate.getTargetXRaw(),ballOnPlate.getTargetYRaw()
 		//,ballOnplate.getFeedforwardX(),ballOnplate.getFeedforwardY()
-		,ballOnplate.getTargetXFiltered(),ballOnplate.getTargetYFiltered()
+		,ballOnPlate.getTargetXFiltered(),ballOnPlate.getTargetYFiltered()
 	};
 	uartVscan.sendOscilloscope(vscan, 8);
 
 	//调试
-	outX = ballOnplate.getOutX();
-	outY = ballOnplate.getOutY();
+	outX = ballOnPlate.getOutX();
+	outY = ballOnPlate.getOutY();
+	//float point[3];
+	//bool isEnd = path.getNext(point, point + 1);
+	//if (isEnd)
+	//{
+	//	point[2] = 100;
+	//}
+	//uartVscan.sendOscilloscope(point, 3);
 }
 
 //UI交互
@@ -197,13 +349,13 @@ void uiRefresh(void *pvParameters)
 	{
 		float fpsPIDtemp;
 		//判断是否树莓派已关机
-		if (!ballOnplate.getIsPosReceiving())
+		if (!ballOnPlate.getIsPosReceiving())
 		{
 			fpsPIDtemp = 0;
 		}
 		else
 		{
-			fpsPIDtemp = ballOnplate.getFps();
+			fpsPIDtemp = ballOnPlate.getFps();
 		}
 
 		//显示任务标号
@@ -220,45 +372,57 @@ void uiRefresh(void *pvParameters)
 		//显示开始按键
 		if (numIndex != 1)
 		{
-			if (inProgress == false)
+			if (stage == 0)
 			{
-				oled.printf(64, 0, Oledi2c_Font_8x16, "start");
+				oled.printf(64, 0, Oledi2c_Font_8x16, "start   ");
 			}
-			else 
+			else if (stage == 1)
 			{
-				oled.printf(64, 0, Oledi2c_Font_8x16, "stop ");
+				oled.printf(64, 0, Oledi2c_Font_8x16, "ready   ");
 			}
+			else if (stage >= 2)
+			{
+				oled.printf(64, 0, Oledi2c_Font_8x16, "working ");
+			}
+			
 		}
 		else
 		{
-			if (inProgress == false)
+			if (stage == 0)
 			{
 				oled.printf(64, 0, Oledi2c_Font_8x16_Inv, "start");
 			}
-			else
+			else if (stage == 1)
 			{
-				oled.printf(64, 0, Oledi2c_Font_8x16_Inv, "stop ");
+				oled.printf(64, 0, Oledi2c_Font_8x16_Inv, "ready");
+			}
+			else if (stage >= 2)
+			{
+				oled.printf(64, 0, Oledi2c_Font_8x16_Inv, "working");
 			}
 		}
+
+		//显示4位数
+		for (int i = 0; i < 4; i++)
+		{
+			if (numIndex - 2 == i)
+			{
+				oled.printf(i * 8, 2, Oledi2c_Font_8x16_Inv, "%1d",abcd[i]+1);
+			}
+			else
+			{
+				oled.printf(i * 8, 2, Oledi2c_Font_8x16, "%1d", abcd[i] + 1);
+			}
+			
+		}
 		
-
-		//switch (numIndex)
-		//{
-		//case 0:
-		//	oled.printf(0, 0, 2, "*%.1f %.1f %.0f  ", ballOnplate.getTargetXraw(), ballOnplate.getTargetYraw(), circleR);
-		//	break;
-		//case 1:
-		//	oled.printf(0, 0, 2, "%.1f *%.1f %.0f  ", ballOnplate.getTargetXraw(), ballOnplate.getTargetYraw(), circleR);
-		//	break;
-		//case 2:
-		//	oled.printf(0, 0, 2, "%.1f %.1f *%.0f  ", ballOnplate.getTargetXraw(), ballOnplate.getTargetYraw(), circleR);
-		//	break;
-		//default:
-		//	break;
-		//}
-
-		oled.printf(0, 5, Oledi2c_Font_6x8, "%-8.1f%-8.1f", ballOnplate.getTargetXRaw(), ballOnplate.getTargetYRaw());
-		oled.printf(0, 6, Oledi2c_Font_6x8, "%-8.1f%-8.1f", ballOnplate.getPosX(), ballOnplate.getPosY());
+		//显示计时
+		if (stage >= 2)
+		{
+			oled.printf(64, 2, Oledi2c_Font_8x16, "%-8.1f", (float)timerUI.toc()/1000);
+		}
+		oled.printf(0, 5, Oledi2c_Font_6x8, "%-8.1f%-8.1f", ballOnPlate.getTargetXRaw(), ballOnPlate.getTargetYRaw());
+		oled.printf(0, 6, Oledi2c_Font_6x8, "%-8.1f%-8.1f", ballOnPlate.getPosX(), ballOnPlate.getPosY());
 		fpsUItemp = fpsUI.getFps();
 		oled.printf(0, 7, Oledi2c_Font_6x8, "%-8.0f%-8.0f", fpsPIDtemp, fpsUItemp);
 
@@ -267,23 +431,13 @@ void uiRefresh(void *pvParameters)
 
 }
 
-//测试路径的数组输出
-void showPathIndex(int* pathPointIndex, int pathLength)
-{
-	for (int i = 0; i < pathLength; i++)
-	{
-		uart1.printf("%d\t", pathPointIndex[i]);
-	}
-	uart1.printf("\r\n");
-}
-
 
 void setup()
 {
 	ebox_init();
-	ballOnplate.attachAfterPIDEvent(posReceiveEvent);
-	ballOnplate.begin();
-
+	ballOnPlate.attachAfterPIDEvent(posReceiveEvent);
+	ballOnPlate.begin();
+	ballOnPlate.startPath(4, 4, 100);//归中
 
 	//调试
 	uart1.begin(115200);
