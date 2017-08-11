@@ -21,7 +21,7 @@
 using namespace std;
 
 BallOnPlateBase ballOnplate;
-SpeedControlSoft speed(0.1);
+BallOnPlatePathSoft path(0.1, 0.5);
 
 //调试
 UartVscan uartVscan(&uart1);
@@ -133,13 +133,6 @@ void uiRefresh(void *pvParameters)
 
 	while (1)
 	{
-		float next[2];
-		bool isDone = speed.getNext(next);
-		if (isDone)
-		{
-			next[1] = 50;
-		}
-		uartVscan.sendOscilloscope(next, 2);
 		float fpsPIDtemp;
 		//判断是否树莓派已关机
 		if (!ballOnplate.getIsPosReceiving())
@@ -169,6 +162,15 @@ void uiRefresh(void *pvParameters)
 		fpsUItemp = fpsUI.getFps();
 		oled.printf(0, 4, 2, "%-8.0f%-8.0f", fpsPIDtemp, fpsUItemp);
 
+		//测试路径生成
+		float point[3];
+		if (path.getNext(point, point + 1))
+		{
+			point[2] = 100;
+		}
+		uartVscan.sendOscilloscope(point, 3);
+
+
 		vTaskDelayUntil(&xLastWakeTime, uiRefreshDelay);
 	}
 
@@ -195,8 +197,8 @@ void setup()
 	uart1.begin(115200);
 	fpsUI.begin();
 
-	speed.setPathTime(10, 50, 5);
-	speed.setStopFre(0.5);
+	path.setPathTime(2, 6, 200);
+
 
 	//交互
 	keyD.begin();

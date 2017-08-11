@@ -6,6 +6,7 @@
 #include "PID.h"
 #include "servo.h"
 #include "ws2812.h"
+#include <math.h>
 
 ////为木板平板小球设计的死区PID
 ////在死区deadzone中，如果速度小于vLim，禁用I控制
@@ -394,9 +395,10 @@ const float BallOnPlateBase::factorPID = 3.7;
 class BallOnPlatePathIndex
 {
 protected:
-	int pathPointIndex[128];//存储路径的下标
 	int pathLength;//路径的长度
 public:
+	int pathPointIndex[128];//存储路径的下标
+
 	BallOnPlatePathIndex() 
 	{
 	}
@@ -497,16 +499,23 @@ public:
 		}
 	}
 
-	//获取路径指针
-	int* getPathPointIndex()
-	{
-		return pathPointIndex;
-	}
 
 	//获取路径长度
 	int getPathLength()
 	{
 		return pathLength;
+	}
+
+	//获取路径的起点
+	int getSrc()
+	{
+		return pathPointIndex[0];
+	}
+
+	//获取路径的终点
+	int getDst()
+	{
+		return pathPointIndex[pathLength - 1];
 	}
 
 };
@@ -542,7 +551,9 @@ protected:
 
 public:
 	SpeedControl(float interval):
-		interval(interval)
+		interval(interval),
+		stepAll(0),
+		stepNow(0)
 	{
 
 	}
@@ -574,6 +585,19 @@ public:
 		}
 		*next = x + (y - x)*stepNow / stepAll;
 		return isEnd;
+	}
+
+	//是否到终点
+	virtual bool isEnd()
+	{
+		if (stepNow >= stepAll)
+		{
+			return true;
+		}
+		else 
+		{
+			return false;
+		}
 	}
 };
 
@@ -620,16 +644,62 @@ public:
 };
 
 //任意两点路径获取与生成
-class BallOnPlatePath :private BallOnPlatePathIndex
+class BallOnPlatePath :protected BallOnPlatePathIndex
 {
+	//切换到下一对路径点
+	//返回true表示结束
+	bool moveOn()
+	{
+		//结束则返回
+		if (pathIndex >= getPathLength() - 1)
+		{
+			return true;
+		}
+
+		//获取实际坐标值
+		float srcX, srcY, dstX, dstY;
+		int srcInd = pathIndex, dstInd = pathIndex + 1;
+		int srcPoint = pathPointIndex[srcInd]
+			, dstPoint = pathPointIndex[dstInd];
+		if (srcPoint < 9)
+		{
+			srcX = circleX[srcPoint]; srcY = circleY[srcPoint];
+		}
+		else
+		{
+			srcX = safeX[srcPoint % 9]; srcY = safeY[srcPoint % 9];
+		}
+		if (dstPoint < 9)
+		{
+			dstX = circleX[dstPoint]; dstY = circleY[dstPoint];
+		}
+		else
+		{
+			dstX = safeX[dstPoint % 9]; dstY = safeY[dstPoint % 9];
+		}
+		float disY = abs(dstY - srcY), disX = abs(dstX - srcX);
+		float speedRatio = sqrt(disX*disX + disY*disY);
+		float speedX = disX / speedRatio*speed;
+		float speedY = disY / speedRatio*speed;
+		generatorX.setPathSpeed(srcX, dstX, speedX);
+		generatorY.setPathSpeed(srcY, dstY, speedY);
+
+		pathIndex++;
+
+		return false;
+	}
 protected:
 	static const float circleX[9], circleY[9];//9个圆的坐标
 	float safeX[4], safeY[4];//4个安全圆的坐标
-	SpeedControlSoft generatorX, generatorY;//生成xy方向一维目标坐标
+	SpeedControl generatorX, generatorY;//生成xy方向一维目标坐标
+	int pathIndex;//标志当前在BallOnPlatePathIndex中路径的下标，范围0 ~ getPathLength()-2
+	float speed;
 public:
 	BallOnPlatePath(float interval) :
 		BallOnPlatePathIndex(),
-		generatorX(interval), generatorY(interval)
+		generatorX(interval), generatorY(interval),
+		pathIndex(0),
+		speed(1)
 	{
 		//计算安全圆的坐标
 		for (int i = 0; i < 4; i++)
@@ -645,18 +715,86 @@ public:
 		}
 	}
 
-	//设置路径的终点起点和时间
-	void setPathTime(int src, int dst, float time)
+
+	//设置路径的起点终点和速度
+	virtual void setPathTime(int src, int dst, float speed)
 	{
-		
+		this->speed = speed;
+		pathIndex = 0;
+		computePathPoint(src, dst);
 	}
 
 	//获取下一点的坐标，返回是否完成
-	bool getNext(float *x, float *y)
+	virtual bool getNext(float *x, float *y)
+	{
+		//如果xy方向都到达终点，继续下一条路径
+		if (generatorX.isEnd() && generatorY.isEnd())
+		{
+			if (moveOn())
+			{
+				return true;
+			}
+		}
+		generatorX.getNext(x);
+		generatorY.getNext(y);
+	}
+
+};
+class BallOnPlatePathSoft :private BallOnPlatePath
+{
+protected:
+	RcFilter filterX, filterY;
+public:
+	BallOnPlatePathSoft(float interval, float stopFre = 0.5) :
+		BallOnPlatePath(interval),
+		filterX(1/ interval, stopFre), filterY(1 / interval, stopFre)
 	{
 
 	}
 
+	//设置滤波器的截止频率
+	void setStopFre(float stopFre)
+	{
+		filterX.setStopFrq(stopFre);
+		filterY.setStopFrq(stopFre);
+	}
+
+	//设置路径的起点终点和速度
+	virtual void setPathTime(int src, int dst, float speed)
+	{
+		BallOnPlatePath::setPathTime(src, dst, speed);
+		
+		//获取起点实际坐标值
+		float srcX, srcY;
+		srcX = circleX[src]; srcY = circleY[src];
+
+		//设置滤波器初始值
+		filterX.setInit(srcX);
+		filterY.setInit(srcY);
+	}
+
+	//获取下一点的坐标，返回是否完成
+	virtual bool getNext(float *x, float *y)
+	{
+		float xRaw, yRaw;
+		bool isEnd = BallOnPlatePath::getNext(&xRaw, &yRaw);
+		if (isEnd==false)
+		{
+			*x = filterX.getFilterOut(xRaw);
+			*y = filterY.getFilterOut(yRaw);
+		}
+		else
+		{
+			//获取终点实际坐标值
+			float dstX, dstY;
+			dstX = circleX[getDst()]; dstY = circleY[getDst()];
+
+			*x = filterX.getFilterOut(dstX);
+			*y = filterY.getFilterOut(dstY);
+		}
+
+		return isEnd;
+	}
 };
 
 const float BallOnPlatePath::circleX[9] = {

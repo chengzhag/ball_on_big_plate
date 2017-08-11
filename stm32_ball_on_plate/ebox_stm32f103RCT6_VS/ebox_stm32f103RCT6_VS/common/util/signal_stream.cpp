@@ -52,6 +52,11 @@ void RcFilter::setInit(float y)
 	yOld = y;
 }
 
+float RcFilter::getLastOut()
+{
+	return yOld;
+}
+
 float SysWithOnlyZero::getY(float x)
 {
 	float y = 0;

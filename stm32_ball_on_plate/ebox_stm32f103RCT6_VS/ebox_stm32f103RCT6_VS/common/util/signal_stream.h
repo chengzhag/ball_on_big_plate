@@ -135,6 +135,9 @@ public:
 
 	//设置滤波器初态
 	void setInit(float y);
+
+	//获取最后输出
+	float getLastOut();
 };
 
 //z变换表示的离散系统
