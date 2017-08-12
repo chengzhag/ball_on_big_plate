@@ -71,7 +71,7 @@ public:
 			{
 				integral = 0;
 			}
-			output = 2.0*kp*err + integral + filter.getFilterOut(2.0*kd*(err - errOld));
+			output = 2.0*kp*err + integral + filter.getFilterOut(1.9*kd*(err - errOld));
 		}
 		//如果在，增大PD控制
 		else if (abs(err) < 50)
@@ -291,7 +291,7 @@ public:
 		servoY.setPct(0);
 
 		//定位
-		uartNum.begin(115200);
+		uartNum.begin(9600);
 
 		//照明
 		ws2812.begin();

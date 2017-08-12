@@ -23,7 +23,7 @@ using namespace std;
 
 //#define STDIO_DEBUG
 //#define SOCKET_SEND_IMAGE
-#define FINAL_RELEASE
+//#define FINAL_RELEASE
 
 
 int main(int argc, char **argv)
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	
 	//初始化串口
 	UartNum<float> uart;
-	uart.begin();
+	uart.begin(9600);
 	
 	//初始化阈值，固定二值化阈值，减轻后面计算负担
 	const int structElementSizePre = 20;
