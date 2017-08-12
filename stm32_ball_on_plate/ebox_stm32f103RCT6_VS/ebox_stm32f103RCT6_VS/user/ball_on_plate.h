@@ -21,19 +21,17 @@ typedef enum
 //前馈补偿变速积分不完全微分PID
 //输入带滤波器，等效于微分先行PID
 //在死区deadzone中，如果速度小于vLim，禁用I控制
-class PIDBallOnPlate :public PIDFeforGshifIntIncDiff, public PIDDeadzone
+class PIDBallOnPlate :public PIDGshifIntIncDiff, public PIDDeadzone
 {
 	float vLim;
-	RcFilter filterFor;
 	PIDBallOnPlate_Mode mode;
 public:
 	PIDBallOnPlate(float kp = 0, float ki = 0, float kd = 0,
 		float interval = 0.01, float stopFrq = 50, float deadzone = 0, float vLim = 0) :
 		PIDPosition(kp, ki, kd, interval),
-		PIDFeforGshifIntIncDiff(kp, ki, kd, interval, stopFrq),
+		PIDGshifIntIncDiff(kp, ki, kd, interval, stopFrq),
 		PIDDeadzone(kp, ki, kd, interval, deadzone),
-		vLim(vLim),
-		filterFor(1 / interval, 1)
+		vLim(vLim)
 	{
 
 	}
@@ -49,7 +47,52 @@ public:
 			errOld = err;
 			isBegin = false;
 		}
-		if (mode == PIDBallOnPlate_Mode_Cali)
+
+		//PID算法开始
+			//如果在死区deadzone中，且速度小于vLim，禁用I控制，增大P控制
+		if ((abs(err) < deadzone) && abs(err - errOld) < vLim)
+		{
+			output = 1.8*kp*err + integral + filter.getFilterOut(1.9*kd*(err - errOld));
+		}
+		//如果在，增大PD控制
+		else if (abs(err) < 25)
+		{
+			//超过输出范围停止积分继续增加
+			//如果朝向目标则停止积分继续增加
+			if (((output > outputLimL && output < outputLimH) ||
+				(output == outputLimH && err < 0) ||
+				(output == outputLimL && err > 0))
+				&& err - errOld < 1)
+			{
+				float ek = (err + errOld) / 2;
+				integral += 1.2*ki*fek(ek)*ek;
+			}
+			if (err > gearshiftPointL + gearshiftPointH)
+			{
+				integral = 0;
+			}
+			output = 2.0*kp*err + integral + filter.getFilterOut(2.0*kd*(err - errOld));
+		}
+		//如果在，增大PD控制
+		else if (abs(err) < 50)
+		{
+			//超过输出范围停止积分继续增加
+			//如果朝向目标则停止积分继续增加
+			if (((output > outputLimL && output < outputLimH) ||
+				(output == outputLimH && err < 0) ||
+				(output == outputLimL && err > 0))
+				&& err - errOld < -3)
+			{
+				float ek = (err + errOld) / 2;
+				integral += ki*fek(ek)*ek;
+			}
+			if (err > gearshiftPointL + gearshiftPointH)
+			{
+				integral = 0;
+			}
+			output = 1.5*kp*err + integral + filter.getFilterOut(1.9*kd*(err - errOld));
+		}
+		else
 		{
 			//超过输出范围停止积分继续增加
 			//如果朝向目标则停止积分继续增加
@@ -67,36 +110,7 @@ public:
 			}
 			output = kp*err + integral + filter.getFilterOut(kd*(err - errOld));
 		}
-		else if (mode == PIDBallOnPlate_Mode_Task)
-		{
-			feedforward = filterFor.getFilterOut(feedforwardH.call(target));
-			//如果在死区deadzone中，且速度小于vLim，禁用I控制，减少D控制
-			if ((abs(err) < deadzone) && abs(err - errOld) < vLim)
-			{
-				output = kp*err + integral + filter.getFilterOut(kd*0.5*(err - errOld))
-					+ feedforward;//FunctionPointer未绑定时默认返回0
-			}
-			else
-			{
-				//超过输出范围停止积分继续增加
-				//如果朝向目标则停止积分继续增加
-				if (((output > outputLimL && output < outputLimH) ||
-					(output == outputLimH && err < 0) ||
-					(output == outputLimL && err > 0))
-					&& err - errOld < 0)
-				{
-					float ek = (err + errOld) / 2;
-					integral += ki*fek(ek)*ek;
-				}
-				if (err > gearshiftPointL + gearshiftPointH)
-				{
-					integral = 0;
-				}
-				output = kp*err + integral + filter.getFilterOut(kd*(err - errOld))
-					+ feedforward;//FunctionPointer未绑定时默认返回0
-			}
-		}
-		
+
 		errOld = err;
 
 		limit<float>(output, outputLimL, outputLimH);
@@ -111,7 +125,7 @@ public:
 	void setMode(PIDBallOnPlate_Mode mode)
 	{
 		this->mode = mode;
-		
+
 	}
 };
 
@@ -190,18 +204,30 @@ protected:
 
 				//针对平板下垂的角度适当增加偏置
 				float increaseX = -(posX - 300)*factorX / 200;
-				float increaseY = (posY - 300)*factorY / 200;
+				float increaseY;
+				//消除两边下塌差别较大的因素
+				if (posY > 300)
+				{
+					increaseY = (posY - 300)*factorY*0.6 / 200;
+				}
+				else
+				{
+					increaseY = (posY - 300)*factorY*1.2 / 200;
+				}
+
 				outX += increaseX + offsetX;
 				outY += increaseY - offsetY;
-				limit<float>(outX, -100, 100);
-				limit<float>(outY, -100, 100);
+				limit<float>(outX, -100.f, 100.f);
+				limit<float>(outY, -100.f, 100.f);
 
 				outX = filterOutX.getFilterOut(outX);
 				outY = filterOutY.getFilterOut(outY);
 			}
 			else
 			{
-				outX = 0; outY = 0;
+				outX = 0, outY = 0;
+				outX += offsetX;
+				outY += offsetY;
 				isBallOnPlate = false;
 			}
 		}
@@ -224,9 +250,9 @@ public:
 		feedforwardSysX((float*)feedforwardSysH, 3), feedforwardSysY((float*)feedforwardSysH, 3),
 		targetXFiltered(maxPos / 2), targetYFiltered(maxPos / 2), targetXraw(targetXFiltered), targetYraw(targetYFiltered),
 		//pid参数
-		pidX(0.2f*factorPID, 0.f*factorPID, 0.14f*factorPID, 1.f / ratePID, 6, 6, 2),//I=0.5, deadzone=6, vLim=2
-		pidY(0.2f*factorPID, 0.f*factorPID, 0.14f*factorPID, 1.f / ratePID, 6, 6, 2),
-		filterOutX(ratePID, 12), filterOutY(ratePID, 12), filterTargetX(ratePID, 0.5), filterTargetY(ratePID, 0.5),
+		pidX(0.2f*factorPID, 0.3f*factorPID, 0.15f*factorPID, 1.f / ratePID, 4, 5, 2),//I=0.5, deadzone=6, vLim=2
+		pidY(0.2f*factorPID, 0.3f*factorPID, 0.15f*factorPID, 1.f / ratePID, 4, 5, 2),
+		filterOutX(ratePID, 12), filterOutY(ratePID, 12), filterTargetX(ratePID, 0.3), filterTargetY(ratePID, 0.3),
 		servoX(&PB9, 210, 0.90, 2.00), servoY(&PB8, 210, 0.95, 2.05),
 		//照明
 		ws2812(&PB0),
@@ -252,13 +278,11 @@ public:
 		fpsPID.begin();
 		pidX.setTarget(maxPos / 2);
 		pidX.setOutputLim(-100, 100);
-		pidX.setGearshiftPoint(20, 100);
-		pidX.attachFeedForwardH(&feedforwardSysX, &SysWithOnlyZero::getY);
+		pidX.setGearshiftPoint(10, 40);
 
 		pidY.setTarget(maxPos / 2);
 		pidY.setOutputLim(-100, 100);
-		pidY.setGearshiftPoint(20, 100);
-		pidY.attachFeedForwardH(&feedforwardSysY, &SysWithOnlyZero::getY);
+		pidY.setGearshiftPoint(10, 40);
 
 		//动力
 		servoX.begin();
@@ -800,9 +824,9 @@ public:
 	virtual void setPathSpeed(int src, int dst, float speed)
 	{
 		this->speed = speed;
-		pathIndex = 0;
 		generatorX.stop();
 		generatorY.stop();
+		pathIndex = 0;
 		computePathPoint(src, dst);
 	}
 
@@ -853,7 +877,7 @@ public:
 	//获取小球圆坐标
 	void getCircleXY(int index, float *x, float *y)
 	{
-		if (index<9)
+		if (index < 9)
 		{
 			*x = circleX[index];
 			*y = circleY[index];
@@ -980,14 +1004,14 @@ public:
 		{
 			//校准i点
 			setPath(caliCircle[i], 100);
-			if (!isBallInCircleFor(caliCircle[i], 30, 500, maxTime))
+			if (!isBallInCircleFor(caliCircle[i], 30, 1000, maxTime))
 			{
 				return false;
 			}
 			intergralX[i] = pidX.getIntegral();
 			intergralY[i] = pidY.getIntegral();
 		}
-		
+
 		//计算offset
 		for (int i = 0; i < 5; i++)
 		{
@@ -1019,17 +1043,8 @@ public:
 		this->mode = mode;
 		if (mode == BallOnPlate_Pos_Mode_Circle)
 		{
-			//int i = 0;
-			//for (i = 0; i < 9; i++)
-			//{
-			//	if (isBallInCircle(i, 15))
-			//	{
-			//		break;
-			//	}
-			//}
-			//setPath(i, i, 100);
 		}
-		else if (mode== BallOnPlate_Pos_Mode_Round)
+		else if (mode == BallOnPlate_Pos_Mode_Round)
 		{
 			theta = M_PI / 4 * 6;
 		}
@@ -1070,10 +1085,10 @@ public:
 	}
 
 	//球是否进入目标圆time ms，超时时间maxTime
-	bool isBallInCircleFor(int index, float dis = 10,float time=500,float maxTime=50000)
+	bool isBallInCircleFor(int index, float dis = 10, float time = 500, float maxTime = 50000)
 	{
-		TicToc timerAll,timerIn;
-		timerAll.tic(); 
+		TicToc timerAll, timerIn;
+		timerAll.tic();
 		timerIn.tic();
 		bool start = false;
 		while (1)
@@ -1089,12 +1104,12 @@ public:
 			}
 			else if (start == true && isBallInCircle(index, dis))
 			{
-				if (timerIn.toc()>500)
+				if (timerIn.toc() > 500)
 				{
 					return true;
 				}
 			}
-			if (timerAll.toc()>maxTime)
+			if (timerAll.toc() > maxTime)
 			{
 				return false;
 			}
@@ -1105,21 +1120,19 @@ public:
 	void setPath(int dst, float speed)
 	{
 		setPath(targetCircle, dst, speed);
-		targetCircle = dst;
+
 	}
 
 	//设置路径
 	void setPath(int src, int dst, float speed)
 	{
-		if (mode==BallOnPlate_Pos_Mode_Round)
+		if (mode == BallOnPlate_Pos_Mode_Round)
 		{
 			setMode(BallOnPlate_Pos_Mode_Circle);
 		}
 		path.setPathSpeed(src, dst, speed);
-		if (targetCircle < 9)
-		{
-			targetCircle = dst;
-		}
+		targetCircle = dst;
+
 	}
 
 	//设置圆周运动半径和速率
@@ -1132,7 +1145,7 @@ public:
 	//刷新路径
 	bool refreshPath()
 	{
-		if (mode==BallOnPlate_Pos_Mode_Circle)
+		if (mode == BallOnPlate_Pos_Mode_Circle)
 		{
 			float x, y;
 			bool isEnd = path.getNext(&x, &y);
@@ -1146,8 +1159,8 @@ public:
 			setTarget(x, y);
 			if (theta > 4 * 2 * M_PI + M_PI / 4 * 7)
 			{
-				path.setPathSpeed(12, 8, 50);
 				setMode(BallOnPlate_Pos_Mode_Circle);
+				path.setPathSpeed(12, 8, 50);
 			}
 			return false;
 		}

@@ -107,7 +107,7 @@ void posReceiveEvent()
 			switch (task)
 			{
 			case 0://任务0，归中
-				if (isnan(ballOnPlate.getPosX()))//防止准备时速度太快冲出平板
+				if (!ballOnPlate.getIsBallOn())//防止准备时速度太快冲出平板
 				{
 					ballOnPlate.setPath(4, 4, 100);
 				}
@@ -118,7 +118,7 @@ void posReceiveEvent()
 				stage = 1;
 				break;
 			case 1://任务1，2稳定5
-				if (isnan(ballOnPlate.getPosX()))
+				if (!ballOnPlate.getIsBallOn())
 				{
 					ballOnPlate.setPath(1, 1, 100);
 				}
@@ -131,7 +131,7 @@ void posReceiveEvent()
 			case 2://任务2，1~5停留2<15
 				if (stage == 0)
 				{
-					if (isnan(ballOnPlate.getPosX()))
+					if (!ballOnPlate.getIsBallOn())
 					{
 						ballOnPlate.setPath(0, 0, 100);
 					}
@@ -151,7 +151,7 @@ void posReceiveEvent()
 			case 3://任务3，1~4停留2~5停留2<20
 				if (stage == 0)
 				{
-					if (isnan(ballOnPlate.getPosX()))
+					if (!ballOnPlate.getIsBallOn())
 					{
 						ballOnPlate.setPath(0, 0, 100);
 					}
@@ -172,7 +172,7 @@ void posReceiveEvent()
 			case 4://任务4，1~9停留2<30
 				if (stage == 0)
 				{
-					if (isnan(ballOnPlate.getPosX()))
+					if (!ballOnPlate.getIsBallOn())
 					{
 						ballOnPlate.setPath(0, 0, 100);
 					}
@@ -193,7 +193,7 @@ void posReceiveEvent()
 			case 5://任务5，1~2~6~9停留2<40
 				if (stage == 0)
 				{
-					if (isnan(ballOnPlate.getPosX()))
+					if (!ballOnPlate.getIsBallOn())
 					{
 						ballOnPlate.setPath(0, 0, 100);
 					}
@@ -214,7 +214,7 @@ void posReceiveEvent()
 			case 6://任务6，手动输入先后经过ABCD
 				if (stage == 0)
 				{
-					if (isnan(ballOnPlate.getPosX()))
+					if (!ballOnPlate.getIsBallOn())
 					{
 						ballOnPlate.setPath(abcd[0], abcd[0], speedTask6);
 					}
@@ -236,13 +236,13 @@ void posReceiveEvent()
 			case 7://任务7，4~绕5 3周以上~9停留2
 				if (stage == 0)
 				{
-					if (isnan(ballOnPlate.getPosX()))
+					if (!ballOnPlate.getIsBallOn())
 					{
-						ballOnPlate.setPath(3, 3, speedTask6);
+						ballOnPlate.setPath(3, 3, 100);
 					}
 					else
 					{
-						ballOnPlate.setPath(3, speedTask6);
+						ballOnPlate.setPath(3, 100);
 					}
 					stage = 1;
 				}
@@ -298,12 +298,12 @@ void posReceiveEvent()
 	switch (task)
 	{
 	case 1:
-		if (stage == 1 && !isnan(ballOnPlate.getPosX()))
+		if (stage == 1 && !ballOnPlate.getIsBallOn())
 		{
 			timerUI.tic();
 			stage = 2;
 		}
-		else if (stage == 2 && isnan(ballOnPlate.getPosX()))
+		else if (stage == 2 && ballOnPlate.getIsBallOn())
 		{
 			stage = 1;
 		}
@@ -344,7 +344,7 @@ void posReceiveEvent()
 	case 7:
 		if (timerTask.toc() > 2000 && stage == 2)
 		{
-			ballOnPlate.setRoundParams(75, 0.2);
+			ballOnPlate.setRoundParams(100, 0.2);
 			ballOnPlate.setMode(BallOnPlate_Pos_Mode_Round);
 			stage = 3;
 			timerTask.tic();
@@ -511,7 +511,7 @@ void setup()
 	ebox_init();
 	ballOnPlate.attachAfterPIDEvent(posReceiveEvent);
 	ballOnPlate.begin();
-	ballOnPlate.setCaliParams(-2, 6, 15, 14);
+	ballOnPlate.setCaliParams(-2, 0, 24, 22);
 	ballOnPlate.setPath(4, 4, 100);//归中
 
 

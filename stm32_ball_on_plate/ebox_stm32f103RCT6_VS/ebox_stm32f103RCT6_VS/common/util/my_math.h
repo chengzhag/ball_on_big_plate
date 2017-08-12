@@ -52,8 +52,14 @@ void limitHigh(T &num, T limH)
 template<typename T>
 void limit(T &num, T limL, T limH)
 {
-	limitLow(num, limL);
-	limitHigh(num, limH);
+	if (num > limH)
+	{
+		num = limH;
+	}
+	else if (num < limL)
+	{
+		num = limL;
+	}
 }
 
 //面向对象的模仿matlab的tictoc类，单位ms
