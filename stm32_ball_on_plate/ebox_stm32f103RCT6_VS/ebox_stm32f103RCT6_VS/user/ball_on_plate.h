@@ -8,17 +8,14 @@
 #include "ws2812.h"
 #include <math.h>
 
-////为木板平板小球设计的死区PID
-////在死区deadzone中，如果速度小于vLim，禁用I控制
-//
-////在目标速度小于vLim且误差小于errLim时，禁用I控制
-////否则在误差绝对值减小时，禁用I控制
-////否则在误差绝对值增大时，启用I控制
-//class PIDBallOnPlate:public PIDFeedforward, public PIDIncompleteDiff
-//{
-//public:
-//	PIDBallOnPlate
-//};
+//#define PIDBallOnPlate_DEBUG
+
+
+typedef enum
+{
+	PIDBallOnPlate_Mode_Task,
+	PIDBallOnPlate_Mode_Cali
+}PIDBallOnPlate_Mode;
 
 //为木板平板小球设计的死区PID
 //前馈补偿变速积分不完全微分PID
@@ -28,6 +25,7 @@ class PIDBallOnPlate :public PIDFeforGshifIntIncDiff, public PIDDeadzone
 {
 	float vLim;
 	RcFilter filterFor;
+	PIDBallOnPlate_Mode mode;
 public:
 	PIDBallOnPlate(float kp = 0, float ki = 0, float kd = 0,
 		float interval = 0.01, float stopFrq = 50, float deadzone = 0, float vLim = 0) :
@@ -51,17 +49,10 @@ public:
 			errOld = err;
 			isBegin = false;
 		}
-
-		feedforward = filterFor.getFilterOut(feedforwardH.call(target));
-		//如果在死区deadzone中，如果速度小于vLim，禁用I控制，减少D控制
-		if ((abs(err) < deadzone) && abs(err - errOld) < vLim)
-		{
-			output = kp*err + integral + filter.getFilterOut(kd*0.5*(err - errOld))
-				+ feedforward;//FunctionPointer未绑定时默认返回0
-		}
-		else
+		if (mode == PIDBallOnPlate_Mode_Cali)
 		{
 			//超过输出范围停止积分继续增加
+			//如果朝向目标则停止积分继续增加
 			if (((output > outputLimL && output < outputLimH) ||
 				(output == outputLimH && err < 0) ||
 				(output == outputLimL && err > 0))
@@ -74,13 +65,53 @@ public:
 			{
 				integral = 0;
 			}
-			output = kp*err + integral + filter.getFilterOut(kd*(err - errOld))
-				+ feedforward;//FunctionPointer未绑定时默认返回0
+			output = kp*err + integral + filter.getFilterOut(kd*(err - errOld));
 		}
-		limit<float>(output, outputLimL, outputLimH);
-
+		else if (mode == PIDBallOnPlate_Mode_Task)
+		{
+			feedforward = filterFor.getFilterOut(feedforwardH.call(target));
+			//如果在死区deadzone中，且速度小于vLim，禁用I控制，减少D控制
+			if ((abs(err) < deadzone) && abs(err - errOld) < vLim)
+			{
+				output = kp*err + integral + filter.getFilterOut(kd*0.5*(err - errOld))
+					+ feedforward;//FunctionPointer未绑定时默认返回0
+			}
+			else
+			{
+				//超过输出范围停止积分继续增加
+				//如果朝向目标则停止积分继续增加
+				if (((output > outputLimL && output < outputLimH) ||
+					(output == outputLimH && err < 0) ||
+					(output == outputLimL && err > 0))
+					&& err - errOld < 0)
+				{
+					float ek = (err + errOld) / 2;
+					integral += ki*fek(ek)*ek;
+				}
+				if (err > gearshiftPointL + gearshiftPointH)
+				{
+					integral = 0;
+				}
+				output = kp*err + integral + filter.getFilterOut(kd*(err - errOld))
+					+ feedforward;//FunctionPointer未绑定时默认返回0
+			}
+		}
+		
 		errOld = err;
+
+		limit<float>(output, outputLimL, outputLimH);
 		return output;
+	}
+
+	float getIntegral()
+	{
+		return integral;
+	}
+
+	void setMode(PIDBallOnPlate_Mode mode)
+	{
+		this->mode = mode;
+		
 	}
 };
 
@@ -113,7 +144,7 @@ protected:
 	//pid参数
 	float targetXFiltered, targetYFiltered, targetXraw, targetYraw;
 	static const float factorPID;
-	PIDGshifIntIncDiff pidX, pidY;
+	PIDBallOnPlate pidX, pidY;
 	RcFilter filterOutX, filterOutY, filterTargetX, filterTargetY;
 	float outX, outY;
 	//pid中断中回调的函数指针
@@ -122,6 +153,9 @@ protected:
 	Servo servoX, servoY;
 	//照明
 	WS2812 ws2812;
+	//平板凸起、水平校准
+	float offsetX, offsetY, factorX, factorY;
+
 
 protected:
 	//收到定位坐标立即进行PID运算
@@ -154,6 +188,14 @@ protected:
 				outX += pidX.refresh(posX);
 				outY -= pidY.refresh(posY);
 
+				//针对平板下垂的角度适当增加偏置
+				float increaseX = -(posX - 300)*factorX / 200;
+				float increaseY = (posY - 300)*factorY / 200;
+				outX += increaseX + offsetX;
+				outY += increaseY - offsetY;
+				limit<float>(outX, -100, 100);
+				limit<float>(outY, -100, 100);
+
 				outX = filterOutX.getFilterOut(outX);
 				outY = filterOutY.getFilterOut(outY);
 			}
@@ -182,14 +224,25 @@ public:
 		feedforwardSysX((float*)feedforwardSysH, 3), feedforwardSysY((float*)feedforwardSysH, 3),
 		targetXFiltered(maxPos / 2), targetYFiltered(maxPos / 2), targetXraw(targetXFiltered), targetYraw(targetYFiltered),
 		//pid参数
-		pidX(0.22f*factorPID, 0.f*factorPID, 0.13f*factorPID, 1.f / ratePID, 5),//I=0.5, deadzone=6, vLim=2
-		pidY(0.22f*factorPID, 0.f*factorPID, 0.13f*factorPID, 1.f / ratePID, 5),
-		filterOutX(ratePID, 15), filterOutY(ratePID, 15), filterTargetX(ratePID, 0.5), filterTargetY(ratePID, 0.5),
-		servoX(&PB9, 200, 0.85, 1.95), servoY(&PB8, 200, 0.95, 2.05),
+		pidX(0.2f*factorPID, 0.f*factorPID, 0.14f*factorPID, 1.f / ratePID, 6, 6, 2),//I=0.5, deadzone=6, vLim=2
+		pidY(0.2f*factorPID, 0.f*factorPID, 0.14f*factorPID, 1.f / ratePID, 6, 6, 2),
+		filterOutX(ratePID, 12), filterOutY(ratePID, 12), filterTargetX(ratePID, 0.5), filterTargetY(ratePID, 0.5),
+		servoX(&PB9, 210, 0.90, 2.00), servoY(&PB8, 210, 0.95, 2.05),
 		//照明
-		ws2812(&PB0)
+		ws2812(&PB0),
+		//平板校准
+		offsetX(0), offsetY(0), factorX(0), factorY(0)
 	{
 
+	}
+
+	//设置平板校准参数
+	void setCaliParams(float offsetX, float offsetY, float factorX, float factorY)
+	{
+		this->offsetX = offsetX;
+		this->offsetY = offsetY;
+		this->factorX = factorX;
+		this->factorY = factorY;
 	}
 
 	//初始化PID、动力、定位、照明
@@ -200,12 +253,12 @@ public:
 		pidX.setTarget(maxPos / 2);
 		pidX.setOutputLim(-100, 100);
 		pidX.setGearshiftPoint(20, 100);
-		//pidX.attachFeedForwardH(&feedforwardSysX, &SysWithOnlyZero::getY);
+		pidX.attachFeedForwardH(&feedforwardSysX, &SysWithOnlyZero::getY);
 
 		pidY.setTarget(maxPos / 2);
 		pidY.setOutputLim(-100, 100);
 		pidY.setGearshiftPoint(20, 100);
-		//pidY.attachFeedForwardH(&feedforwardSysY, &SysWithOnlyZero::getY);
+		pidY.attachFeedForwardH(&feedforwardSysY, &SysWithOnlyZero::getY);
 
 		//动力
 		servoX.begin();
@@ -889,10 +942,14 @@ protected:
 	//PID中断函数，添加路径刷新对目标点的设置
 	virtual void posReceiveEvent(UartNum<float, 2>* uartNum)
 	{
+#ifndef PIDBallOnPlate_DEBUG
 		if (getIsBallOn())
 		{
+#endif // PIDBallOnPlate_DEBUG
 			refreshPath();
+#ifndef PIDBallOnPlate_DEBUG
 		}
+#endif // PIDBallOnPlate_DEBUG
 
 		BallOnPlateBase::posReceiveEvent(uartNum);
 	}
@@ -905,6 +962,54 @@ public:
 		roundR(75), fre(0.2)
 	{
 
+	}
+
+	//校准平板，成功返回true
+	bool calibrate()
+	{
+		float offsetX = 0, offsetY = 0, factorX = 0, factorY = 0;
+		setCaliParams(0, 0, 0, 0);
+		pidX.setMode(PIDBallOnPlate_Mode_Cali);
+		pidY.setMode(PIDBallOnPlate_Mode_Cali);
+
+		const float maxTime = 10000;
+		const int caliCircle[] = { 4,0,2,8,6 };
+		float intergralX[5], intergralY[5];
+
+		for (int i = 0; i < 5; i++)
+		{
+			//校准i点
+			setPath(caliCircle[i], 100);
+			if (!isBallInCircleFor(caliCircle[i], 30, 500, maxTime))
+			{
+				return false;
+			}
+			intergralX[i] = pidX.getIntegral();
+			intergralY[i] = pidY.getIntegral();
+		}
+		
+		//计算offset
+		for (int i = 0; i < 5; i++)
+		{
+			offsetX += intergralX[i];
+			offsetY += intergralY[i];
+		}
+		offsetX /= 5;
+		offsetY /= 5;
+
+		//计算factor
+		for (int i = 1; i < 5; i++)
+		{
+			factorX += abs(intergralX[i]);
+			factorY += abs(intergralY[i]);
+		}
+		factorX /= 4;
+		factorY /= 4;
+
+
+		setCaliParams(offsetX, offsetY, factorX, factorY);
+		pidX.setMode(PIDBallOnPlate_Mode_Task);
+		pidY.setMode(PIDBallOnPlate_Mode_Task);
 	}
 
 	//设置小球控制模式
@@ -961,6 +1066,38 @@ public:
 		else
 		{
 			return false;
+		}
+	}
+
+	//球是否进入目标圆time ms，超时时间maxTime
+	bool isBallInCircleFor(int index, float dis = 10,float time=500,float maxTime=50000)
+	{
+		TicToc timerAll,timerIn;
+		timerAll.tic(); 
+		timerIn.tic();
+		bool start = false;
+		while (1)
+		{
+			if (start == false && isBallInCircle(index, dis))
+			{
+				start = true;
+				timerIn.tic();
+			}
+			else if (start == true && !isBallInCircle(index, dis))
+			{
+				start = false;
+			}
+			else if (start == true && isBallInCircle(index, dis))
+			{
+				if (timerIn.toc()>500)
+				{
+					return true;
+				}
+			}
+			if (timerAll.toc()>maxTime)
+			{
+				return false;
+			}
 		}
 	}
 

@@ -45,6 +45,7 @@ int numIndex = 0;
 int task = 0;
 TicToc timerTask,timerUI;
 int stage = 0;//任务的状态，0代表停止，1代表准备完毕
+bool caliSuc = true, caliBegin = false;
 
 //路径参数
 int abcd[4] = { 0 };
@@ -67,7 +68,7 @@ void posReceiveEvent()
 		numIndex--;
 	}
 
-	limit<int>(numIndex, 0, 6);
+	limit<int>(numIndex, 0, 7);
 
 	//总共7个部分，0部分用作调试
 	//按键响应
@@ -284,6 +285,12 @@ void posReceiveEvent()
 			ballOnPlate.shutdownRasp();
 		}
 		break;
+	case 7:
+		if (increase != 0)
+		{
+			caliBegin = true;
+		}
+		break;
 	default:
 		break;
 	}
@@ -360,6 +367,22 @@ void posReceiveEvent()
 	//调试
 	outX = ballOnPlate.getOutX();
 	outY = ballOnPlate.getOutY();
+}
+
+
+//校准平板任务
+void caliTask(void *pvParameters)
+{
+	portTickType xLastWakeTime;
+	xLastWakeTime = xTaskGetTickCount();
+	while (1)
+	{
+		if (caliBegin)
+		{
+			caliSuc = ballOnPlate.calibrate();
+			caliBegin = false;
+		}
+	}
 }
 
 //UI交互
@@ -442,13 +465,32 @@ void uiRefresh(void *pvParameters)
 		//显示关机按键
 		if (numIndex==6)
 		{
-			oled.printf(24, 4, Oledi2c_Font_6x8_Inv, "shutdown");
+			oled.printf(0, 4, Oledi2c_Font_6x8_Inv, "shutdown");
 		}
 		else
 		{
-			oled.printf(24, 4, Oledi2c_Font_6x8, "shutdown");
+			oled.printf(0, 4, Oledi2c_Font_6x8, "shutdown");
 		}
 		
+		//显示校准按键
+		if (numIndex == 7)
+		{
+			oled.printf(72, 4, Oledi2c_Font_6x8_Inv, "cali");
+		}
+		else
+		{
+			oled.printf(72, 4, Oledi2c_Font_6x8, "cali");
+		}
+
+		if (caliSuc)
+		{
+			oled.printf(104, 4, Oledi2c_Font_6x8, "Suc");
+		}
+		else
+		{
+			oled.printf(104, 4, Oledi2c_Font_6x8, "Fai");
+		}
+
 		//显示计时
 		if (stage >= 2)
 		{
@@ -469,6 +511,7 @@ void setup()
 	ebox_init();
 	ballOnPlate.attachAfterPIDEvent(posReceiveEvent);
 	ballOnPlate.begin();
+	ballOnPlate.setCaliParams(-2, 6, 15, 14);
 	ballOnPlate.setPath(4, 4, 100);//归中
 
 
@@ -488,6 +531,7 @@ void setup()
 	set_systick_user_event_per_sec(configTICK_RATE_HZ);
 	attach_systick_user_event(xPortSysTickHandler);
 	xTaskCreate(uiRefresh, "uiRefresh", 512, NULL, 0, NULL);
+	xTaskCreate(caliTask, "caliTask", 512, NULL, 0, NULL);
 	vTaskStartScheduler();
 }
 
