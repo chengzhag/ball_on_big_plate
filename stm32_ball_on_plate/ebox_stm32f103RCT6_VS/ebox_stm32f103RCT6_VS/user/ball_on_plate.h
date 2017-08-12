@@ -414,6 +414,15 @@ public:
 	//pathLength代表路径的长度
 	void computePathPoint(int src, int dst)
 	{
+		//为7题设计特例
+		if ((src == 12 && dst == 8) || (src == 3 && dst == 11))
+		{
+			pathPointIndex[0] = src;
+			pathPointIndex[1] = dst;
+			pathLength = 2;
+			return;
+		}
+
 		pathPointIndex[0] = src;
 
 		int srcX = src % 3, srcY = src / 3;
@@ -609,6 +618,12 @@ public:
 			return false;
 		}
 	}
+
+	//停止路径生成，重置
+	void stop()
+	{
+		stepNow = stepAll;
+	}
 };
 
 class SpeedControlSoft :public SpeedControl
@@ -698,11 +713,13 @@ class BallOnPlatePath :protected BallOnPlatePathIndex
 
 		return false;
 	}
+
 protected:
 	float safeX[4], safeY[4];//4个安全圆的坐标
 	SpeedControl generatorX, generatorY;//生成xy方向一维目标坐标
 	int pathIndex;//标志当前在BallOnPlatePathIndex中路径的下标，范围0 ~ getPathLength()-2
 	float speed;
+
 public:
 	static const float circleX[9], circleY[9];//9个圆的坐标
 
@@ -727,10 +744,12 @@ public:
 	}
 
 	//设置路径的起点终点和速度
-	virtual void setPathTime(int src, int dst, float speed)
+	virtual void setPathSpeed(int src, int dst, float speed)
 	{
 		this->speed = speed;
 		pathIndex = 0;
+		generatorX.stop();
+		generatorY.stop();
 		computePathPoint(src, dst);
 	}
 
@@ -744,7 +763,7 @@ public:
 			{
 				//获取终点实际坐标值
 				float dstX, dstY;
-				dstX = circleX[getDst()]; dstY = circleY[getDst()];
+				getCircleXY(getDst(), &dstX, &dstY);
 
 				*x = dstX;
 				*y = dstY;
@@ -774,6 +793,24 @@ public:
 	void stop()
 	{
 		pathIndex = getPathLength() - 1;
+		generatorX.stop();
+		generatorY.stop();
+	}
+
+	//获取小球圆坐标
+	void getCircleXY(int index, float *x, float *y)
+	{
+		if (index<9)
+		{
+			*x = circleX[index];
+			*y = circleY[index];
+		}
+		else
+		{
+			index -= 9;
+			*x = safeX[index];
+			*y = safeY[index];
+		}
 	}
 
 };
@@ -799,7 +836,7 @@ public:
 	//设置路径的起点终点和速度
 	virtual void setPathSpeed(int src, int dst, float speed)
 	{
-		BallOnPlatePath::setPathTime(src, dst, speed);
+		BallOnPlatePath::setPathSpeed(src, dst, speed);
 
 		//获取起点实际坐标值
 		float srcX, srcY;
@@ -837,7 +874,7 @@ const float BallOnPlatePath::circleY[9] = {
 typedef enum
 {
 	BallOnPlate_Pos_Mode_Circle,
-	BallOnPlate_Pos_Mode_Point
+	BallOnPlate_Pos_Mode_Round
 }BallOnPlate_Pos_Mode;
 
 class BallOnPlate :public BallOnPlateBase
@@ -846,18 +883,15 @@ protected:
 	BallOnPlatePath path;
 	int targetCircle;
 	BallOnPlate_Pos_Mode mode;
+	float theta;
+	float roundR, fre;
 
 	//PID中断函数，添加路径刷新对目标点的设置
 	virtual void posReceiveEvent(UartNum<float, 2>* uartNum)
 	{
-		if (mode== BallOnPlate_Pos_Mode_Circle)
+		if (getIsBallOn())
 		{
-			if (getIsBallOn())
-			{
-				refreshPath();
-			}
-		}else if (mode == BallOnPlate_Pos_Mode_Point)
-		{
+			refreshPath();
 		}
 
 		BallOnPlateBase::posReceiveEvent(uartNum);
@@ -867,19 +901,37 @@ public:
 	BallOnPlate() :
 		path(getIntervalPID()),
 		targetCircle(4),
-		mode(BallOnPlate_Pos_Mode_Circle)
+		mode(BallOnPlate_Pos_Mode_Circle),
+		roundR(75), fre(0.2)
 	{
 
 	}
 
 	//设置小球控制模式
+	//在圆周模式下，从theta=pi/4*5开始绕区域5旋转n圈，至theta=pi/2*3
 	void setMode(BallOnPlate_Pos_Mode mode)
 	{
 		this->mode = mode;
+		if (mode == BallOnPlate_Pos_Mode_Circle)
+		{
+			//int i = 0;
+			//for (i = 0; i < 9; i++)
+			//{
+			//	if (isBallInCircle(i, 15))
+			//	{
+			//		break;
+			//	}
+			//}
+			//setPath(i, i, 100);
+		}
+		else if (mode== BallOnPlate_Pos_Mode_Round)
+		{
+			theta = M_PI / 4 * 6;
+		}
 	}
 
 	//获取小球圆坐标
-	void getCircle(int index, float *x, float *y)
+	void getCircleXY(int index, float *x, float *y)
 	{
 		*x = path.circleX[index];
 		*y = path.circleY[index];
@@ -899,10 +951,10 @@ public:
 
 
 	//球是否进入目标圆
-	bool isBallInCircle(int index)
+	bool isBallInCircle(int index, float dis = 10)
 	{
-		if (abs(path.circleX[index] - getPosX()) < 10
-			&& abs(path.circleY[index] - getPosY()) < 10)
+		if (abs(path.circleX[index] - getPosX()) < dis
+			&& abs(path.circleY[index] - getPosY()) < dis)
 		{
 			return true;
 		}
@@ -922,17 +974,46 @@ public:
 	//设置路径
 	void setPath(int src, int dst, float speed)
 	{
-		path.setPathTime(src, dst, speed);
-		targetCircle = dst;
+		if (mode==BallOnPlate_Pos_Mode_Round)
+		{
+			setMode(BallOnPlate_Pos_Mode_Circle);
+		}
+		path.setPathSpeed(src, dst, speed);
+		if (targetCircle < 9)
+		{
+			targetCircle = dst;
+		}
+	}
+
+	//设置圆周运动半径和速率
+	void setRoundParams(float r, float fre)
+	{
+		this->roundR = r;
+		this->fre = fre;
 	}
 
 	//刷新路径
 	bool refreshPath()
 	{
-		float x, y;
-		bool isEnd = path.getNext(&x, &y);
-		setTarget(x, y);
-		return isEnd;
+		if (mode==BallOnPlate_Pos_Mode_Circle)
+		{
+			float x, y;
+			bool isEnd = path.getNext(&x, &y);
+			setTarget(x, y);
+			return isEnd;
+		}
+		else if (mode == BallOnPlate_Pos_Mode_Round)
+		{
+			theta += 2 * M_PI*getIntervalPID()*fre;//转圈频率
+			float x = roundR*cos(theta) + getCircleX(4), y = -roundR*sin(theta) + getCircleY(4);
+			setTarget(x, y);
+			if (theta > 4 * 2 * M_PI + M_PI / 4 * 7)
+			{
+				path.setPathSpeed(12, 8, 50);
+				setMode(BallOnPlate_Pos_Mode_Circle);
+			}
+			return false;
+		}
 	}
 
 	//停止路径

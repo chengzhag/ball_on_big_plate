@@ -48,7 +48,7 @@ int stage = 0;//任务的状态，0代表停止，1代表准备完毕
 
 //路径参数
 int abcd[4] = { 0 };
-const float speedTask6=150;
+const float speedTask6=120;
 
 void posReceiveEvent()
 {
@@ -232,8 +232,26 @@ void posReceiveEvent()
 					stage = 2;
 				}
 				break;
-			case 7://任务7，
-
+			case 7://任务7，4~绕5 3周以上~9停留2
+				if (stage == 0)
+				{
+					if (isnan(ballOnPlate.getPosX()))
+					{
+						ballOnPlate.setPath(3, 3, speedTask6);
+					}
+					else
+					{
+						ballOnPlate.setPath(3, speedTask6);
+					}
+					stage = 1;
+				}
+				else if (stage == 1)
+				{
+					timerUI.tic();
+					timerTask.tic();
+					ballOnPlate.setPath(3, 11, 75);
+					stage = 2;
+				}
 				break;
 			default:
 				break;
@@ -284,7 +302,7 @@ void posReceiveEvent()
 		}
 		break;
 	case 3:
-		if (timerTask.toc() > 5000 && stage == 2)
+		if (timerTask.toc() > 7000 && stage == 2)
 		{
 			ballOnPlate.setPath(3, 4, 100);
 			stage = 3;
@@ -304,16 +322,25 @@ void posReceiveEvent()
 		}
 		break;
 	case 6:
-		if (timerTask.toc() > 5000 && stage == 2)
+		if (timerTask.toc() > 6000 && stage == 2)
 		{
 			ballOnPlate.setPath(abcd[1], abcd[2], speedTask6);
 			stage = 3;
 			timerTask.tic();
 		}
-		else if (timerTask.toc() > 5000 && stage == 3)
+		else if (timerTask.toc() > 6000 && stage == 3)
 		{
 			ballOnPlate.setPath(abcd[2], abcd[3], speedTask6);
 			stage = 4;
+		}
+		break;
+	case 7:
+		if (timerTask.toc() > 2000 && stage == 2)
+		{
+			ballOnPlate.setRoundParams(75, 0.2);
+			ballOnPlate.setMode(BallOnPlate_Pos_Mode_Round);
+			stage = 3;
+			timerTask.tic();
 		}
 		break;
 	default:
