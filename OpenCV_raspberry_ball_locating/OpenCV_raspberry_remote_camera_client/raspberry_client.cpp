@@ -90,9 +90,9 @@ int main(int argc, char **argv)
 	//平板小球尺寸信息
 	const float maxX = 600, maxY = 600;
 	const float camHeight = 430;
-	const float ballArea = 28;
+	const float ballArea = 30;
 	const float ballAreaLow = ballArea * 0.2;
-	const float ballAreaHigh = ballArea * 1.5;
+	const float ballAreaHigh = ballArea * 5;
 	
 	
 #ifdef SOCKET_SEND_IMAGE
